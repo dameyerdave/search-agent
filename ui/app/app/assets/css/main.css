@@ -1,0 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Space+Mono:wght@400;700&display=swap');
+@import 'tailwindcss';
+
+:root {
+  --bg: #040604;
+  --bg-soft: #0b140d;
+  --panel: rgba(11, 20, 13, 0.82);
+  --panel-strong: rgba(4, 8, 5, 0.92);
+  --line: rgba(93, 255, 153, 0.24);
+  --line-strong: rgba(93, 255, 153, 0.55);
+  --text: #f3fff8;
+  --muted: #92b49b;
+  --accent: #5dff99;
+  --accent-soft: rgba(93, 255, 153, 0.12);
+  --warn: #fff39c;
+  --danger: #ff7d7d;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(93, 255, 153, 0.12), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.08), transparent 20%),
+    var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: 'Space Mono', monospace;
+  color: var(--text);
+  background: transparent;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.03) 0,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.1;
+}
+
+a {
+  color: var(--accent);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.screen-shell {
+  min-height: 100vh;
+  background:
+    linear-gradient(140deg, rgba(13, 20, 14, 0.95), rgba(3, 6, 4, 0.98)),
+    var(--bg);
+}
+
+.terminal-panel {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--panel-strong));
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 0 30px rgba(93, 255, 153, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.terminal-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(93, 255, 153, 0.06), transparent 18%, transparent 82%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%);
+  opacity: 0.3;
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(93, 255, 153, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(93, 255, 153, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.terminal-input,
+.terminal-select,
+.terminal-textarea {
+  width: 100%;
+  border: 1px solid rgba(93, 255, 153, 0.2);
+  background: rgba(2, 6, 3, 0.86);
+  color: var(--text);
+  border-radius: 0.85rem;
+  padding: 0.85rem 0.95rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.terminal-input:focus,
+.terminal-select:focus,
+.terminal-textarea:focus {
+  outline: none;
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 3px rgba(93, 255, 153, 0.12);
+}
+
+.terminal-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  padding: 0.72rem 1.15rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.terminal-button:hover {
+  transform: translateY(-1px);
+}
+
+.terminal-button-primary {
+  background: linear-gradient(135deg, rgba(93, 255, 153, 0.16), rgba(93, 255, 153, 0.08));
+  color: var(--text);
+}
+
+.terminal-button-secondary {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--muted);
+}
+
+.terminal-button-danger {
+  border-color: rgba(255, 125, 125, 0.45);
+  color: #ffd4d4;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(93, 255, 153, 0.2);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  padding: 0.85rem;
+  text-align: left;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.data-table td {
+  border-top: 1px solid rgba(93, 255, 153, 0.08);
+  padding: 0.95rem 0.85rem;
+  vertical-align: top;
+}
+
+.mono-heading {
+  font-family: 'Share Tech Mono', monospace;
+}
