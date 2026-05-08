@@ -1,3 +1,8 @@
+export interface LanguageOption {
+  code: string
+  label: string
+}
+
 export interface SourceScope {
   id: number
   name: string
@@ -11,6 +16,7 @@ export interface SourceScope {
   language: string
   safe_search: number
   time_range: 'auto' | 'any' | 'day' | 'month' | 'year'
+  result_order: 'relevance' | 'newest'
   max_results: number
   include_domains: string[]
   exclude_domains: string[]
@@ -54,8 +60,22 @@ export interface ProviderConfig {
   searxng_base_url: string
   crawl4ai_enabled: boolean
   available_categories: string[]
+  available_engines: string[]
+  available_languages: LanguageOption[]
   created_at: string
   updated_at: string
+}
+
+export interface SocialAuthProvider {
+  id: string
+  name: string
+  login_path: string
+  login_url: string
+  callback_url: string
+}
+
+export interface SocialAuthProvidersPayload {
+  providers: SocialAuthProvider[]
 }
 
 export interface SearchRun {
@@ -99,6 +119,36 @@ export interface SearchResult {
   updated_at: string
 }
 
+export interface SearchResultMapPreview {
+  id: number
+  title: string
+  url: string
+  topic_name: string
+  source_scope_name: string | null
+  domain: string
+  published_at: string | null
+  is_new: boolean
+}
+
+export interface SearchResultMapMarker {
+  id: string
+  name: string
+  display_name: string
+  latitude: number
+  longitude: number
+  place_type: string
+  related_result_count: number
+  remaining_result_count: number
+  results: SearchResultMapPreview[]
+}
+
+export interface SearchResultMapResponse {
+  result_count: number
+  mapped_result_count: number
+  location_count: number
+  markers: SearchResultMapMarker[]
+}
+
 export interface LiveSearxResult {
   position: number
   title: string
@@ -117,6 +167,7 @@ export interface LiveSearxResult {
 export interface LiveSearxResponse {
   query: string
   params: Record<string, string | number>
+  result_order: 'relevance' | 'newest'
   result_count: number
   number_of_results: number | null
   suggestions: string[]

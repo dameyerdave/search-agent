@@ -1,19 +1,27 @@
 from django.contrib import admin
 
-from .models import SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+from .models import (
+    SearchProviderConfig,
+    SearchResult,
+    SearchResultLocation,
+    SearchRun,
+    SearchTopic,
+    SourceScope,
+)
 
 
 @admin.register(SourceScope)
 class SourceScopeAdmin(admin.ModelAdmin):
-    list_display = ("name", "kind", "enabled", "time_range", "max_results")
-    list_filter = ("kind", "enabled", "time_range", "safe_search")
-    search_fields = ("name", "description")
+    list_display = ("name", "owner", "kind", "enabled", "time_range", "result_order", "max_results")
+    list_filter = ("owner", "kind", "enabled", "time_range", "result_order", "safe_search")
+    search_fields = ("name", "description", "owner__username", "owner__email")
 
 
 @admin.register(SearchTopic)
 class SearchTopicAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "owner",
         "enabled",
         "schedule_every",
         "schedule_unit",
@@ -23,8 +31,8 @@ class SearchTopicAdmin(admin.ModelAdmin):
         "last_run_status",
         "last_checked_at",
     )
-    list_filter = ("enabled", "last_run_status")
-    search_fields = ("name", "description", "slug")
+    list_filter = ("owner", "enabled", "last_run_status")
+    search_fields = ("name", "description", "slug", "owner__username", "owner__email")
     prepopulated_fields = {"slug": ("name",)}
     filter_horizontal = ("source_scopes",)
 
@@ -65,3 +73,10 @@ class SearchResultAdmin(admin.ModelAdmin):
     )
     list_filter = ("topic", "source_scope", "is_new")
     search_fields = ("title", "url", "snippet", "domain")
+
+
+@admin.register(SearchResultLocation)
+class SearchResultLocationAdmin(admin.ModelAdmin):
+    list_display = ("name", "result", "latitude", "longitude", "place_type")
+    list_filter = ("place_type",)
+    search_fields = ("name", "display_name", "result__title", "result__url")

@@ -36,6 +36,17 @@ services:
     depends_on:
       api:
         condition: service_healthy
+  cloudflare-tunnel:
+    profiles:
+      - tunnel
+    image: cloudflare/cloudflared:latest
+    hostname: cloudflare-tunnel
+    restart: unless-stopped
+    env_file: .env
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
   ui-build:
     profiles:
       - prod

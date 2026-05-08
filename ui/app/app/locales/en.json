@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "My cool title",
+    "title": "xuno",
     "lorem_ipsum": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
   },
   "common": {
@@ -17,6 +17,110 @@
       "books_count": "{count} books",
       "route_label": "route: {route}",
       "go_home": "Go to /"
+    }
+  },
+  "pwa": {
+    "badge": {
+      "installed": "Installed",
+      "secure": "HTTPS needed",
+      "ready": "Ready",
+      "phone": "Phone setup",
+      "manual": "Browser menu"
+    },
+    "button": {
+      "install": "Install app",
+      "installed": "App installed"
+    },
+    "panel": {
+      "installed_title": "Installed",
+      "installed_description": "This device is already running xuno as an installed app.",
+      "secure_title": "Use HTTPS",
+      "secure_description": "App installation needs a secure origin. Open this app on localhost or over HTTPS before trying to install it on a phone or in the browser.",
+      "ready_title": "Install xuno",
+      "ready_description": "Use the native browser prompt to install xuno with its own launcher and full-screen shell.",
+      "ios_title": "Add on iPhone",
+      "ios_description": "Safari can pin xuno to your home screen so it opens like an app.",
+      "ios_browser_title": "Open in Safari",
+      "ios_browser_description": "iPhone and iPad installation works best in Safari because other iOS browsers do not expose the home-screen flow here.",
+      "manual_title": "Manual install",
+      "manual_description": "If your browser does not show the native prompt yet, you can still install xuno from the browser menu.",
+      "install_now": "Install now",
+      "close": "Close"
+    },
+    "steps": {
+      "installed": "Launch xuno from your home screen, Dock, or app launcher whenever you want the app shell.",
+      "secure_context": "Serve this app from localhost or HTTPS so the service worker and install flow can run.",
+      "native_prompt": "Tap Install app and confirm the browser prompt to add xuno to this device.",
+      "ios_share": "Tap Safari’s Share button.",
+      "ios_add": "Choose Add to Home Screen, then confirm Add.",
+      "ios_open_safari": "Open this page in Safari to use Add to Home Screen on iPhone or iPad.",
+      "browser_menu": "Open your browser menu and choose Install app or Add to Home screen.",
+      "confirm_install": "Confirm the install prompt to create a launcher in your browser or on your phone."
+    }
+  },
+  "results": {
+    "headers": {
+      "result": "Result",
+      "topic": "Topic",
+      "scope": "Scope",
+      "when": "When"
+    },
+    "badges": {
+      "new": "new"
+    },
+    "meta": {
+      "seen": "Seen {date}",
+      "published": "Published {date}"
+    },
+    "not_available": "n/a",
+    "no_preview": "No preview available.",
+    "empty": "No results match the current filter set."
+  },
+  "map": {
+    "title": "Topic location overlay",
+    "subtitle": "Track where stored results are landing and inspect the related messages behind each place marker.",
+    "subtitle_topic": "Mapped places for {topic}, synced with the active results filters.",
+    "select_topic_prompt": "Select a topic in Results Terminal to load its map.",
+    "empty_map": "No stored places match the current filter set yet.",
+    "empty_topic_map": "No stored places for this topic match the active results filters yet.",
+    "controls": {
+      "fit": "Fit",
+      "refresh": "Refresh",
+      "clear": "Clear filters"
+    },
+    "filters": {
+      "search": "Search text",
+      "search_placeholder": "city, country, topic, domain...",
+      "topic": "Topic filter",
+      "kind": "Scope kind",
+      "all_topics": "All topics",
+      "all_kinds": "All kinds",
+      "public": "Public",
+      "research": "Research",
+      "custom": "Custom",
+      "new_only": "Show only new results"
+    },
+    "stats": {
+      "results": "Results",
+      "mapped": "Mapped results",
+      "locations": "Locations"
+    },
+    "selection": {
+      "title": "Marker details",
+      "placeholder": "Select a circle on the map to inspect the related messages for that place.",
+      "related": "Related messages",
+      "more_results": "+{count} more messages in this location",
+      "empty": "No location is selected yet."
+    },
+    "results": {
+      "new": "new",
+      "published": "Published {date}",
+      "never": "Unknown",
+      "unknown_domain": "unknown domain"
+    },
+    "tiles": {
+      "alt": "OpenStreetMap tile",
+      "attribution": "Map data: OpenStreetMap contributors"
     }
   }
 }

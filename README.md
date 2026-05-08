@@ -4,11 +4,13 @@ Based on `ETH-NEXUS/nexus-fullstack-example`, this project now uses SearxNG for 
 
 It is designed to:
 
+- authenticate users with local sessions plus optional Google, GitHub, or Microsoft OAuth
 - track multiple topics, each with independent search criteria
 - let you run live ad hoc SearxNG searches before saving them as tracked topics
 - search configurable public, research, and custom source scopes via SearxNG
 - enrich discovered pages with Crawl4AI markdown extraction
 - store results in PostgreSQL and keep them searchable
+- scope saved topics, source scopes, runs, and stored results to the signed-in user
 - highlight what is still new
 - present everything in a black / green / white hacker-style UI that works on desktop and iPhone-sized screens
 
@@ -46,6 +48,7 @@ Services:
 
 - local SearxNG container
 - Crawl4AI running inside the API / worker image
+- optional Cloudflare Tunnel connector through the `tunnel` compose profile
 
 ## Quick Start
 
@@ -77,9 +80,43 @@ Key environment variables:
 - `SEARXNG_BASE_URL`
 - `SEARXNG_TIMEOUT_S`
 - `CRAWL4AI_MAX_PAGES_PER_RUN`
+- `SOCIAL_AUTH_PUBLIC_BASE_URL`
+- `SOCIAL_AUTH_GOOGLE_CLIENT_ID`
+- `SOCIAL_AUTH_GOOGLE_CLIENT_SECRET`
+- `SOCIAL_AUTH_GITHUB_CLIENT_ID`
+- `SOCIAL_AUTH_GITHUB_CLIENT_SECRET`
+- `SOCIAL_AUTH_MICROSOFT_CLIENT_ID`
+- `SOCIAL_AUTH_MICROSOFT_CLIENT_SECRET`
+- `TUNNEL_TOKEN`
+
+## Cloudflare Tunnel
+
+The optional `cloudflare-tunnel` service runs `cloudflare/cloudflared` as a connector for a remotely-managed Cloudflare Tunnel.
+Set `TUNNEL_TOKEN` in `.env` and include `tunnel` in `COMPOSE_PROFILES` to run it with the rest of the dev stack.
+
+## Authentication
+
+The UI now requires sign-in before loading the dashboard or saving searches.
+
+Out of the box you still have local session login with the default admin user, and you can enable social login buttons by filling the matching env vars:
+
+- Google
+- GitHub
+- Microsoft
+
+The social login entrypoints are exposed through the UI proxy at:
+
+- `/api/v1/auth/social/google/login/`
+- `/api/v1/auth/social/github/login/`
+- `/api/v1/auth/social/microsoft/login/`
+
+For Google OAuth in local development, register this callback URL:
+
+- `http://localhost:8077/api/v1/auth/social/google/login/callback/`
 
 ## Key API Endpoints
 
+- `GET /api/v1/auth/providers/`
 - `GET /api/v1/dashboard/`
 - `POST /api/v1/searxng/search/`
 - `GET/POST /api/v1/topics/`

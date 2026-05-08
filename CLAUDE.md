@@ -64,6 +64,29 @@ pnpm generate:api
 
 **i18n** - use `const { t } = useI18n()` for all user-facing strings
 
+**PWA install support** - keep install metadata in static files and mount the installer once in the root shell:
+```typescript
+// app shell
+<PwaInstallButton />
+```
+
+- Manifest: `ui/app/public/manifest.webmanifest`
+- Service worker: `ui/app/public/sw.js`
+- Install UI: `ui/app/app/components/PwaInstallButton.vue`
+
+**OpenStreetMap overlay** - keep map fetching and tile rendering in focused components. The map is mounted inside the Explore workspace and follows the selected topic/result filters:
+```typescript
+<SearchMapWorkspace
+  :topic-slug="resultFilters.topic"
+  :topic-name="selectedTopic?.name ?? ''"
+/>
+```
+
+- Map workspace: `ui/app/app/components/SearchMapWorkspace.vue`
+- Tile map: `ui/app/app/components/SearchResultsMap.vue`
+- Aggregated API: `GET /api/v1/results/map/`
+- Backfill command: `python manage.py backfill_result_locations`
+
 ## Auth
 
 Session-based with CSRF (auto-handled by `app/api/mutator/custom-fetch.ts`).

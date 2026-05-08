@@ -25,11 +25,33 @@ CRAWL4AI_MAX_PAGES_PER_RUN = env.int("CRAWL4AI_MAX_PAGES_PER_RUN", default=25)
 CRAWL4AI_PRUNE_THRESHOLD = env.float("CRAWL4AI_PRUNE_THRESHOLD", default=0.4)
 CRAWL4AI_WORD_COUNT_THRESHOLD = env.int("CRAWL4AI_WORD_COUNT_THRESHOLD", default=20)
 
+SOCIAL_AUTH_PUBLIC_BASE_URL = env.str(
+    "SOCIAL_AUTH_PUBLIC_BASE_URL",
+    default="",
+).strip().rstrip("/")
+
+
+def _load_social_provider_app(prefix):
+    client_id = env.str(f"{prefix}_CLIENT_ID", default="").strip()
+    secret = env.str(f"{prefix}_CLIENT_SECRET", default="").strip()
+    if not client_id or not secret:
+        return None
+
+    app = {
+        "client_id": client_id,
+        "secret": secret,
+    }
+    key = env.str(f"{prefix}_CLIENT_KEY", default="").strip()
+    if key:
+        app["key"] = key
+    return app
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "django.contrib.sites",
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_filters",
@@ -39,6 +61,12 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "dj_rest_auth",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.github",
+    "allauth.socialaccount.providers.microsoft",
     "django_structlog",
     "core",
 ]
@@ -56,10 +84,12 @@ INSTALLED_APPS += [
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
     "guardian.backends.ObjectPermissionBackend",
 )
 
 ANONYMOUS_USER_ID = -1
+SITE_ID = env.int("DJANGO_SITE_ID", default=1)
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -69,6 +99,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -184,6 +215,63 @@ REST_AUTH = {
     "TOKEN_SERIALIZER": "core.serializers.SessionLoginTokenSerializer",
 }
 
+ACCOUNT_EMAIL_VERIFICATION = "none"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_STORE_TOKENS = False
+
+SOCIALACCOUNT_PROVIDERS = {}
+SOCIAL_LOGIN_PROVIDERS = []
+
+google_app = _load_social_provider_app("SOCIAL_AUTH_GOOGLE")
+if google_app:
+    SOCIALACCOUNT_PROVIDERS["google"] = {
+        "APPS": [google_app],
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online", "prompt": "select_account"},
+    }
+    SOCIAL_LOGIN_PROVIDERS.append(
+        {
+            "id": "google",
+            "name": "Google",
+            "login_path": "/api/v1/auth/social/google/login/",
+        }
+    )
+
+github_app = _load_social_provider_app("SOCIAL_AUTH_GITHUB")
+if github_app:
+    SOCIALACCOUNT_PROVIDERS["github"] = {
+        "APPS": [github_app],
+        "SCOPE": ["read:user", "user:email"],
+    }
+    SOCIAL_LOGIN_PROVIDERS.append(
+        {
+            "id": "github",
+            "name": "GitHub",
+            "login_path": "/api/v1/auth/social/github/login/",
+        }
+    )
+
+microsoft_app = _load_social_provider_app("SOCIAL_AUTH_MICROSOFT")
+if microsoft_app:
+    SOCIALACCOUNT_PROVIDERS["microsoft"] = {
+        "APPS": [microsoft_app],
+        "SCOPE": ["openid", "profile", "email", "User.Read"],
+        "AUTH_PARAMS": {
+            "prompt": "select_account",
+        },
+        "TENANT": env.str("SOCIAL_AUTH_MICROSOFT_TENANT", default="common"),
+    }
+    SOCIAL_LOGIN_PROVIDERS.append(
+        {
+            "id": "microsoft",
+            "name": "Microsoft",
+            "login_path": "/api/v1/auth/social/microsoft/login/",
+        }
+    )
+
 # Use drf-spectacular for schema generation in DEBUG
 if DEBUG:
     REST_FRAMEWORK["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
@@ -223,8 +311,10 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 CSRF_USE_SESSIONS = True
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = "Strict"
-SESSION_COOKIE_SAMESITE = "Strict"
+SESSION_COOKIE_SAMESITE = env.str("DJANGO_SESSION_COOKIE_SAMESITE", default="Lax")
 SESSION_COOKIE_AGE = 1209600  # (1209600) default: 2 weeks in seconds
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
 if not DEBUG:
     CSRF_COOKIE_SECURE = True

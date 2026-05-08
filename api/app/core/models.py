@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
@@ -27,7 +28,16 @@ class SourceScope(TimestampedModel):
         MONTH = "month", "Month"
         YEAR = "year", "Year"
 
-    name = models.CharField(max_length=120, unique=True)
+    class ResultOrder(models.TextChoices):
+        RELEVANCE = "relevance", "Relevance"
+        NEWEST = "newest", "Time (newest first)"
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="source_scopes",
+    )
+    name = models.CharField(max_length=120)
     description = models.TextField(blank=True)
     kind = models.CharField(
         max_length=32,
@@ -49,6 +59,11 @@ class SourceScope(TimestampedModel):
         choices=TimeRange.choices,
         default=TimeRange.AUTO,
     )
+    result_order = models.CharField(
+        max_length=16,
+        choices=ResultOrder.choices,
+        default=ResultOrder.RELEVANCE,
+    )
     max_results = models.PositiveSmallIntegerField(
         default=10,
         validators=[MinValueValidator(1), MaxValueValidator(20)],
@@ -59,6 +74,12 @@ class SourceScope(TimestampedModel):
 
     class Meta:
         ordering = ["sort_order", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "name"],
+                name="unique_source_scope_name_per_owner",
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -78,8 +99,13 @@ class SearchTopic(TimestampedModel):
         DAYS = "days", "Days"
         WEEKS = "weeks", "Weeks"
 
-    name = models.CharField(max_length=180, unique=True)
-    slug = models.SlugField(max_length=200, unique=True, blank=True)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="search_topics",
+    )
+    name = models.CharField(max_length=180)
+    slug = models.SlugField(max_length=200, blank=True)
     description = models.TextField(blank=True)
     enabled = models.BooleanField(default=True)
     queries = models.JSONField(default=list, blank=True)
@@ -116,6 +142,16 @@ class SearchTopic(TimestampedModel):
 
     class Meta:
         ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "name"],
+                name="unique_search_topic_name_per_owner",
+            ),
+            models.UniqueConstraint(
+                fields=["owner", "slug"],
+                name="unique_search_topic_slug_per_owner",
+            ),
+        ]
 
     def __str__(self):
         return self.name
@@ -165,7 +201,10 @@ class SearchTopic(TimestampedModel):
             base_slug = slugify(self.name) or "topic"
             candidate = base_slug
             counter = 2
-            while SearchTopic.objects.exclude(pk=self.pk).filter(slug=candidate).exists():
+            slug_queryset = SearchTopic.objects.exclude(pk=self.pk)
+            if self.owner_id:
+                slug_queryset = slug_queryset.filter(owner_id=self.owner_id)
+            while slug_queryset.filter(slug=candidate).exists():
                 candidate = f"{base_slug}-{counter}"
                 counter += 1
             self.slug = candidate
@@ -259,6 +298,7 @@ class SearchResult(TimestampedModel):
     first_seen_at = models.DateTimeField(default=timezone.now)
     last_seen_at = models.DateTimeField(default=timezone.now)
     is_new = models.BooleanField(default=True)
+    location_signature = models.CharField(max_length=40, blank=True)
     raw_result = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -277,3 +317,34 @@ class SearchResult(TimestampedModel):
 
     def __str__(self):
         return self.title
+
+
+class SearchResultLocation(TimestampedModel):
+    result = models.ForeignKey(
+        SearchResult,
+        on_delete=models.CASCADE,
+        related_name="locations",
+    )
+    name = models.CharField(max_length=180)
+    normalized_name = models.CharField(max_length=180)
+    display_name = models.CharField(max_length=255, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    place_type = models.CharField(max_length=40, blank=True)
+    importance = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["name", "latitude", "longitude"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["result", "normalized_name", "latitude", "longitude"],
+                name="unique_result_location_per_result",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["normalized_name"]),
+            models.Index(fields=["latitude", "longitude"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name} @ {self.latitude}, {self.longitude}"

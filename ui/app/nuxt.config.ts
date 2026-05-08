@@ -6,6 +6,24 @@ const appDir = fileURLToPath(new URL('./app', import.meta.url))
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
+  app: {
+    head: {
+      title: 'xuno | Search Agent',
+      meta: [
+        { name: 'theme-color', content: '#040604' },
+        { name: 'application-name', content: 'xuno' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'apple-mobile-web-app-title', content: 'xuno' },
+      ],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon/xuno-mark.svg' },
+        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'apple-touch-icon', href: '/pwa/apple-touch-icon.png' },
+      ],
+    },
+  },
   css: ['./app/assets/css/main.css'],
   nitro: {
     static: true,

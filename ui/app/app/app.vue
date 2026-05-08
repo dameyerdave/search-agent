@@ -11,6 +11,7 @@ import type {
 } from 'types/search-agent'
 
 const api = useSearchAgentApi()
+const authStore = useAuthStore()
 const LIVE_SEARCH_PAGE_SIZE = 10
 
 const dashboard = ref<DashboardPayload | null>(null)
@@ -18,6 +19,7 @@ const resultsPage = ref<PaginatedResponse<SearchResult> | null>(null)
 const runsPage = ref<PaginatedResponse<SearchRun> | null>(null)
 const busyLabel = ref('Booting signal deck...')
 const errorMessage = ref('')
+const isBootstrappingAuth = ref(true)
 
 const isLoadingDashboard = ref(false)
 const isSavingTopic = ref(false)
@@ -32,6 +34,8 @@ const showAdvancedSearch = ref(false)
 const showLiveSearchSaveDialog = ref(false)
 const liveSearchPage = ref(1)
 const liveSearchHasMore = ref(false)
+const loginUsername = ref('')
+const loginPassword = ref('')
 
 const topicEditorMode = ref<'create' | 'edit'>('create')
 const sourceEditorMode = ref<'create' | 'edit'>('create')
@@ -62,10 +66,11 @@ const emptyLiveSearchForm = () => ({
   categories: [] as string[],
   useAllCategories: true,
   useAllEngines: true,
-  engines: '',
-  language: 'en-US',
+  engines: [] as string[],
+  language: '',
   safeSearch: '0',
   timeRange: '',
+  resultOrder: 'relevance' as 'relevance' | 'newest',
   includeDomains: '',
   excludeDomains: '',
   extraParams: '',
@@ -107,10 +112,11 @@ const emptySourceForm = () => ({
   searxngCategories: [] as string[],
   useAllCategories: true,
   useAllEngines: true,
-  searxngEngines: '',
-  language: 'en-US',
+  searxngEngines: [] as string[],
+  language: '',
   safeSearch: '0',
   timeRange: 'auto',
+  resultOrder: 'relevance' as 'relevance' | 'newest',
   maxResults: 10,
   includeDomains: '',
   excludeDomains: '',
@@ -127,6 +133,8 @@ const sources = computed(() => dashboard.value?.sources ?? [])
 const enabledSources = computed(() => sources.value.filter((source) => source.enabled))
 const provider = computed(() => dashboard.value?.provider ?? null)
 const availableCategories = computed(() => provider.value?.available_categories ?? [])
+const availableEngines = computed(() => provider.value?.available_engines ?? [])
+const availableLanguages = computed(() => provider.value?.available_languages ?? [])
 const stats = computed(() => dashboard.value?.stats ?? null)
 const results = computed(() => resultsPage.value?.results ?? [])
 const runs = computed(() => runsPage.value?.results ?? [])
@@ -134,7 +142,20 @@ const liveSearchResults = computed(() => liveSearchResponse.value?.results ?? []
 const canSaveLiveSearch = computed(() => Boolean(liveSearchForm.q.trim()))
 const liveSearchLoadedCount = computed(() => liveSearchResults.value.length)
 const canLoadMoreLiveSearch = computed(
-  () => liveSearchHasMore.value && liveSearchResponse.value?.query === liveSearchForm.q.trim(),
+  () =>
+    liveSearchHasMore.value
+    && liveSearchResponse.value?.query === liveSearchForm.q.trim()
+    && liveSearchResponse.value?.result_order === liveSearchForm.resultOrder,
+)
+const authProviders = computed(() => authStore.providers)
+const currentUserLabel = computed(() => {
+  const firstName = authStore.user?.first_name?.trim()
+  const lastName = authStore.user?.last_name?.trim()
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
+  return fullName || authStore.user?.username || authStore.user?.email || 'operator'
+})
+const localLoginDisabled = computed(
+  () => authStore.isLoading || !loginUsername.value.trim() || !loginPassword.value,
 )
 
 const selectedTopic = computed(() => topics.value.find((topic) => topic.slug === resultFilters.topic) ?? null)
@@ -150,25 +171,21 @@ const workspaceTabs = [
     key: 'search',
     label: 'Search',
     eyebrow: 'live searxng',
-    description: 'Query SearxNG directly, explore advanced filters, and save new topics.',
   },
   {
     key: 'explore',
     label: 'Explore',
     eyebrow: 'results terminal',
-    description: 'Search the collected corpus and pivot by topic.',
   },
   {
     key: 'configure',
     label: 'Configure',
     eyebrow: 'topics + sources',
-    description: 'Create topics, tune source scopes, and manage the provider.',
   },
   {
     key: 'runs',
     label: 'Runs',
     eyebrow: 'telemetry + history',
-    description: 'Review execution stats, run history, and topic health.',
   },
 ] as const
 
@@ -190,6 +207,33 @@ const splitTokens = (value: string) =>
     .filter(Boolean)
 
 const joinLines = (value: string[]) => value.join('\n')
+
+const normalizeLanguageCode = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  const options = availableLanguages.value
+  const exact = options.find((option) => option.code === trimmed)
+  if (exact) {
+    return exact.code
+  }
+
+  const dashed = trimmed.replace(/_/g, '-')
+  const normalized = options.find((option) => option.code.toLowerCase() === dashed.toLowerCase())
+  if (normalized) {
+    return normalized.code
+  }
+
+  const baseLanguage = dashed.split('-', 1)[0]
+  const baseMatch = options.find((option) => option.code.toLowerCase() === baseLanguage.toLowerCase())
+  if (baseMatch) {
+    return baseMatch.code
+  }
+
+  return trimmed
+}
 
 const setBusy = (message: string) => {
   busyLabel.value = message
@@ -238,6 +282,9 @@ const describeEngines = (source: SourceScope) =>
       ? source.searxng_engines.join(', ')
       : 'restricted engine set'
 
+const describeResultOrder = (source: SourceScope) =>
+  source.result_order === 'newest' ? 'time: newest first' : 'relevance'
+
 const formatNextRun = (topic: SearchTopic) => {
   if (!topic.enabled) {
     return 'Paused'
@@ -284,6 +331,38 @@ const parseExtraParams = (value: string) => {
   return params
 }
 
+const sortLiveSearchResults = (results: LiveSearxResponse['results'], resultOrder: 'relevance' | 'newest') => {
+  const resolveTimestamp = (value: string | null) => {
+    if (!value) {
+      return Number.NEGATIVE_INFINITY
+    }
+    const parsed = new Date(value).getTime()
+    return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY
+  }
+
+  const resolveScore = (value: number | null) => (typeof value === 'number' ? value : Number.NEGATIVE_INFINITY)
+
+  if (resultOrder === 'newest') {
+    return [...results].sort((left, right) => {
+      const leftDate = resolveTimestamp(left.published_at)
+      const rightDate = resolveTimestamp(right.published_at)
+      if (leftDate !== rightDate) {
+        return rightDate - leftDate
+      }
+
+      const leftScore = resolveScore(left.score)
+      const rightScore = resolveScore(right.score)
+      return rightScore - leftScore
+    })
+  }
+
+  return [...results].sort((left, right) => {
+    const leftScore = resolveScore(left.score)
+    const rightScore = resolveScore(right.score)
+    return rightScore - leftScore
+  })
+}
+
 const ensureLiveSearchDraftDefaults = () => {
   if (!liveSearchSaveForm.name.trim()) {
     liveSearchSaveForm.name = fallbackLiveTopicName()
@@ -302,6 +381,14 @@ const ensureLiveSearchDraftDefaults = () => {
 const hydrateProviderForm = (config: ProviderConfig | null) => {
   providerForm.id = config?.id ?? 0
   providerForm.enabled = config?.enabled ?? true
+}
+
+const resetDashboardState = () => {
+  dashboard.value = null
+  resultsPage.value = null
+  runsPage.value = null
+  busyLabel.value = 'Awaiting operator authentication...'
+  errorMessage.value = ''
 }
 
 const resetLiveSearchWorkspace = () => {
@@ -388,10 +475,11 @@ const openSourceEditor = (source?: SourceScope) => {
     searxngCategories: [...source.searxng_categories],
     useAllCategories: source.use_all_categories,
     useAllEngines: source.use_all_engines,
-    searxngEngines: joinLines(source.searxng_engines),
-    language: source.language,
+    searxngEngines: [...source.searxng_engines],
+    language: normalizeLanguageCode(source.language),
     safeSearch: String(source.safe_search),
     timeRange: source.time_range,
+    resultOrder: source.result_order,
     maxResults: source.max_results,
     includeDomains: joinLines(source.include_domains),
     excludeDomains: joinLines(source.exclude_domains),
@@ -417,10 +505,11 @@ const runLiveSearch = async (append = false) => {
       categories: liveSearchForm.useAllCategories ? [] : liveSearchForm.categories,
       use_all_categories: liveSearchForm.useAllCategories,
       use_all_engines: liveSearchForm.useAllEngines,
-      engines: liveSearchForm.useAllEngines ? [] : splitTokens(liveSearchForm.engines),
-      language: liveSearchForm.language.trim(),
+      engines: liveSearchForm.useAllEngines ? [] : liveSearchForm.engines,
+      language: normalizeLanguageCode(liveSearchForm.language),
       safesearch: Number(liveSearchForm.safeSearch),
       time_range: liveSearchForm.timeRange,
+      result_order: liveSearchForm.resultOrder,
       pageno: nextPage,
       max_results: LIVE_SEARCH_PAGE_SIZE,
       include_domains: splitTokens(liveSearchForm.includeDomains),
@@ -428,7 +517,10 @@ const runLiveSearch = async (append = false) => {
       extra_params: parseExtraParams(liveSearchForm.extraParams),
     })
 
-    const combinedResults = [...(shouldAppend ? liveSearchResults.value : []), ...response.results].map((result, index) => ({
+    const combinedResults = sortLiveSearchResults(
+      [...(shouldAppend ? liveSearchResults.value : []), ...response.results],
+      response.result_order,
+    ).map((result, index) => ({
       ...result,
       position: index + 1,
     }))
@@ -481,10 +573,11 @@ const saveLiveSearchAsTopic = async () => {
         searxng_categories: liveSearchForm.useAllCategories ? [] : liveSearchForm.categories,
         use_all_categories: liveSearchForm.useAllCategories,
         use_all_engines: liveSearchForm.useAllEngines,
-        searxng_engines: liveSearchForm.useAllEngines ? [] : splitTokens(liveSearchForm.engines),
-        language: liveSearchForm.language.trim(),
+        searxng_engines: liveSearchForm.useAllEngines ? [] : liveSearchForm.engines,
+        language: normalizeLanguageCode(liveSearchForm.language),
         safe_search: Number(liveSearchForm.safeSearch),
         time_range: liveSearchForm.timeRange || 'any',
+        result_order: liveSearchForm.resultOrder,
         max_results: Math.min(20, LIVE_SEARCH_PAGE_SIZE),
         include_domains: splitTokens(liveSearchForm.includeDomains),
         exclude_domains: splitTokens(liveSearchForm.excludeDomains),
@@ -529,6 +622,25 @@ const saveLiveSearchAsTopic = async () => {
   } finally {
     isSavingLiveSearchTopic.value = false
   }
+}
+
+const loginWithPassword = async () => {
+  authStore.clearError()
+  errorMessage.value = ''
+
+  const ok = await authStore.login(loginUsername.value.trim(), loginPassword.value)
+  if (!ok) {
+    return
+  }
+
+  loginPassword.value = ''
+  await refreshAll()
+}
+
+const logoutUser = async () => {
+  await authStore.logout()
+  loginPassword.value = ''
+  resetDashboardState()
 }
 
 const loadDashboard = async () => {
@@ -652,10 +764,11 @@ const saveSource = async () => {
     searxng_categories: sourceForm.useAllCategories ? [] : sourceForm.searxngCategories,
     use_all_categories: sourceForm.useAllCategories,
     use_all_engines: sourceForm.useAllEngines,
-    searxng_engines: sourceForm.useAllEngines ? [] : splitLines(sourceForm.searxngEngines),
-    language: sourceForm.language.trim(),
+    searxng_engines: sourceForm.useAllEngines ? [] : sourceForm.searxngEngines,
+    language: normalizeLanguageCode(sourceForm.language),
     safe_search: Number(sourceForm.safeSearch),
     time_range: sourceForm.timeRange,
+    result_order: sourceForm.resultOrder,
     max_results: Number(sourceForm.maxResults),
     include_domains: splitLines(sourceForm.includeDomains),
     exclude_domains: splitLines(sourceForm.excludeDomains),
@@ -761,17 +874,6 @@ const toggleTopicSource = (sourceId: number) => {
   }
 }
 
-const toggleSelection = (values: string[], value: string) =>
-  values.includes(value) ? values.filter((entry) => entry !== value) : [...values, value]
-
-const toggleLiveSearchCategory = (category: string) => {
-  liveSearchForm.categories = toggleSelection(liveSearchForm.categories, category)
-}
-
-const toggleSourceCategory = (category: string) => {
-  sourceForm.searxngCategories = toggleSelection(sourceForm.searxngCategories, category)
-}
-
 const selectAllLiveSearchCategories = () => {
   liveSearchForm.categories = [...availableCategories.value]
 }
@@ -780,12 +882,28 @@ const clearLiveSearchCategories = () => {
   liveSearchForm.categories = []
 }
 
+const selectAllLiveSearchEngines = () => {
+  liveSearchForm.engines = [...availableEngines.value]
+}
+
+const clearLiveSearchEngines = () => {
+  liveSearchForm.engines = []
+}
+
 const selectAllSourceCategories = () => {
   sourceForm.searxngCategories = [...availableCategories.value]
 }
 
 const clearSourceCategories = () => {
   sourceForm.searxngCategories = []
+}
+
+const selectAllSourceEngines = () => {
+  sourceForm.searxngEngines = [...availableEngines.value]
+}
+
+const clearSourceEngines = () => {
+  sourceForm.searxngEngines = []
 }
 
 const debouncedResultsReload = useDebounceFn(async () => {
@@ -811,83 +929,192 @@ watch(
 )
 
 onMounted(async () => {
-  await refreshAll()
+  try {
+    await authStore.initialize()
+    if (authStore.isAuthenticated) {
+      await refreshAll()
+    } else {
+      resetDashboardState()
+    }
+  } finally {
+    isBootstrappingAuth.value = false
+  }
 })
 </script>
 
 <template>
   <div class="screen-shell grid-bg">
     <NuxtRouteAnnouncer />
+    <PwaInstallButton />
 
-    <main class="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
+    <main class="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-5 px-4 pt-5 pb-28 sm:px-6 sm:pb-24 lg:px-8">
       <section class="terminal-panel relative overflow-hidden rounded-[1.8rem] p-6 sm:p-8">
         <div class="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div class="max-w-3xl space-y-4">
+          <div class="max-w-3xl space-y-3">
+            <XunoBrandMark class="max-w-[30rem]" />
             <div class="pill w-fit bg-[var(--accent-soft)] text-[var(--accent)]">
               <span class="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_14px_var(--accent)]" />
               searxng + crawl4ai
-            </div>
-            <div class="space-y-3">
-              <p class="mono-heading text-sm uppercase tracking-[0.4em] text-[var(--muted)]">Research search agent</p>
-              <h1 class="mono-heading text-4xl leading-tight text-white sm:text-5xl">
-                Scheduled discovery for configurable public and research topics.
-              </h1>
-              <p class="max-w-2xl text-sm leading-7 text-[var(--muted)] sm:text-base">
-                Use SearxNG for discovery, Crawl4AI for page parsing, tune scope-specific search criteria,
-                and surface newly discovered results in one terminal-inspired dashboard.
-              </p>
             </div>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2 lg:w-[420px]">
             <div class="rounded-2xl border border-[var(--line)] bg-black/30 p-4">
-              <p class="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Provider</p>
-              <p class="mt-2 text-3xl text-white">{{ provider?.enabled ? 'Online' : 'Offline' }}</p>
-              <p class="mt-1 text-xs text-[var(--muted)]">{{ provider?.name ?? 'searxng' }} discovery pipeline</p>
+              <p class="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Operator</p>
+              <p class="mt-2 text-3xl text-white">
+                {{
+                  isBootstrappingAuth
+                    ? 'Checking'
+                    : authStore.isAuthenticated
+                      ? 'Signed in'
+                      : 'Sign in'
+                }}
+              </p>
+              <p class="mt-1 text-xs text-[var(--muted)]">
+                {{
+                  isBootstrappingAuth
+                    ? 'Verifying the current session'
+                    : authStore.isAuthenticated
+                      ? currentUserLabel
+                      : 'Session required'
+                }}
+              </p>
+              <div v-if="authStore.isAuthenticated" class="mt-4">
+                <button class="terminal-button terminal-button-secondary" :disabled="authStore.isLoading" @click="logoutUser">
+                  {{ authStore.isLoading ? 'Signing out...' : 'Sign out' }}
+                </button>
+              </div>
             </div>
             <div class="rounded-2xl border border-[var(--line)] bg-black/30 p-4">
-              <p class="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Status</p>
-              <p class="mt-2 text-sm text-white">{{ busyLabel }}</p>
-              <p class="mt-4 text-xs text-[var(--muted)]">
-                SearxNG:
-                <span class="text-[var(--accent)]">{{ provider?.searxng_base_url || 'n/a' }}</span>
+              <p class="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">
+                {{ authStore.isAuthenticated ? 'Status' : 'Login routes' }}
               </p>
-              <p class="mt-2 text-xs text-[var(--muted)]">
-                Crawl4AI:
-                <span :class="provider?.crawl4ai_enabled ? 'text-[var(--accent)]' : 'text-[var(--danger)]'">
-                  {{ provider?.crawl4ai_enabled ? 'enabled' : 'disabled' }}
-                </span>
+              <p class="mt-2 text-sm text-white">
+                {{ authStore.isAuthenticated ? busyLabel : `${authProviders.length} social provider${authProviders.length === 1 ? '' : 's'}` }}
               </p>
+              <template v-if="authStore.isAuthenticated">
+                <p class="mt-4 text-xs text-[var(--muted)]">
+                  SearxNG:
+                  <span class="text-[var(--accent)]">{{ provider?.searxng_base_url || 'n/a' }}</span>
+                </p>
+                <p class="mt-2 text-xs text-[var(--muted)]">
+                  Crawl4AI:
+                  <span :class="provider?.crawl4ai_enabled ? 'text-[var(--accent)]' : 'text-[var(--danger)]'">
+                    {{ provider?.crawl4ai_enabled ? 'enabled' : 'disabled' }}
+                  </span>
+                </p>
+              </template>
             </div>
           </div>
         </div>
       </section>
 
-      <section v-if="errorMessage" class="rounded-2xl border border-[rgba(255,125,125,0.35)] bg-[rgba(64,7,7,0.6)] px-4 py-3 text-sm text-[#ffd8d8]">
-        {{ errorMessage }}
+      <section
+        v-if="isBootstrappingAuth"
+        class="rounded-2xl border border-[var(--line)] bg-black/30 px-4 py-6 text-sm text-[var(--muted)]"
+      >
+        Checking session...
       </section>
 
-      <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-3 sm:p-4">
-        <div class="relative z-10 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <button
-            v-for="tab in workspaceTabs"
-            :key="tab.key"
-            class="rounded-[1.2rem] border px-4 py-4 text-left transition-all"
-            :class="
-              activeWorkspace === tab.key
-                ? 'border-[var(--accent)] bg-[var(--accent-soft)] shadow-[0_0_24px_rgba(91,255,147,0.12)]'
-                : 'border-[var(--line)] bg-black/25 hover:border-[var(--accent)]/60 hover:bg-black/35'
-            "
-            @click="activeWorkspace = tab.key"
-          >
-            <p class="text-[11px] uppercase tracking-[0.28em]" :class="activeWorkspace === tab.key ? 'text-[var(--accent)]' : 'text-[var(--muted)]'">
-              {{ tab.eyebrow }}
-            </p>
-            <p class="mt-2 mono-heading text-lg text-white">{{ tab.label }}</p>
-            <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ tab.description }}</p>
-          </button>
-        </div>
-      </section>
+      <template v-else-if="!authStore.isAuthenticated">
+        <section class="terminal-panel relative overflow-hidden rounded-[1.6rem] p-5 sm:p-7">
+          <div class="relative z-10 grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
+            <div class="space-y-4">
+              <div>
+                <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Access gate</p>
+              </div>
+
+              <div class="rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-4">
+                <p class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Social login</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                  <button
+                    v-for="providerOption in authProviders"
+                    :key="providerOption.id"
+                    class="terminal-button terminal-button-primary justify-center"
+                    :disabled="authStore.isLoadingProviders"
+                    @click="authStore.startSocialLogin(providerOption.id)"
+                  >
+                    Continue with {{ providerOption.name }}
+                  </button>
+                  <article
+                    v-if="!authProviders.length && !authStore.isLoadingProviders"
+                    class="rounded-2xl border border-dashed border-[var(--line)] bg-black/20 p-4 text-sm text-[var(--muted)] sm:col-span-2"
+                  >
+                    No social providers configured.
+                  </article>
+                </div>
+              </div>
+            </div>
+
+            <div class="rounded-[1.4rem] border border-[var(--line)] bg-black/25 p-5">
+              <div class="space-y-3">
+                <div>
+                  <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Local operator login</p>
+                </div>
+
+                <label class="space-y-2">
+                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Username</span>
+                  <input v-model="loginUsername" class="terminal-input" autocomplete="username" placeholder="admin" />
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Password</span>
+                  <input
+                    v-model="loginPassword"
+                    class="terminal-input"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="••••••••"
+                    @keyup.enter="loginWithPassword"
+                  />
+                </label>
+
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    class="terminal-button terminal-button-secondary"
+                    :disabled="localLoginDisabled"
+                    @click="loginWithPassword"
+                  >
+                    {{ authStore.isLoading ? 'Signing in...' : 'Sign in locally' }}
+                  </button>
+                </div>
+
+                <article
+                  v-if="authStore.error"
+                  class="rounded-2xl border border-[rgba(255,125,125,0.35)] bg-[rgba(64,7,7,0.6)] px-4 py-3 text-sm text-[#ffd8d8]"
+                >
+                  {{ authStore.error }}
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+      </template>
+
+      <template v-else>
+        <section v-if="errorMessage" class="rounded-2xl border border-[rgba(255,125,125,0.35)] bg-[rgba(64,7,7,0.6)] px-4 py-3 text-sm text-[#ffd8d8]">
+          {{ errorMessage }}
+        </section>
+
+        <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-3 sm:p-4">
+          <div class="relative z-10 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <button
+              v-for="tab in workspaceTabs"
+              :key="tab.key"
+              class="rounded-[1.2rem] border px-4 py-4 text-left transition-all"
+              :class="
+                activeWorkspace === tab.key
+                  ? 'border-[var(--accent)] bg-[var(--accent-soft)] shadow-[0_0_24px_rgba(91,255,147,0.12)]'
+                  : 'border-[var(--line)] bg-black/25 hover:border-[var(--accent)]/60 hover:bg-black/35'
+              "
+              @click="activeWorkspace = tab.key"
+            >
+              <p class="text-[11px] uppercase tracking-[0.28em]" :class="activeWorkspace === tab.key ? 'text-[var(--accent)]' : 'text-[var(--muted)]'">
+                {{ tab.eyebrow }}
+              </p>
+              <p class="mt-2 mono-heading text-lg text-white">{{ tab.label }}</p>
+            </button>
+          </div>
+        </section>
 
       <template v-if="activeWorkspace === 'search'">
         <section>
@@ -896,7 +1123,6 @@ onMounted(async () => {
               <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Live SearxNG terminal</p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">Probe the live index directly before deciding which searches deserve recurring tracking.</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button class="terminal-button terminal-button-secondary" @click="showAdvancedSearch = !showAdvancedSearch">
@@ -935,10 +1161,15 @@ onMounted(async () => {
               </div>
 
               <div v-if="showAdvancedSearch" class="space-y-4 rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-4">
-                <div class="grid gap-3 lg:grid-cols-3">
+                <div class="grid gap-3 lg:grid-cols-4">
                   <label class="space-y-2">
                     <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Language</span>
-                    <input v-model="liveSearchForm.language" class="terminal-input" placeholder="en-US" />
+                    <select v-model="liveSearchForm.language" class="terminal-select">
+                      <option value="">All languages</option>
+                      <option v-for="language in availableLanguages" :key="language.code" :value="language.code">
+                        {{ language.label }} ({{ language.code }})
+                      </option>
+                    </select>
                   </label>
                   <label class="space-y-2">
                     <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Safe search</span>
@@ -957,6 +1188,13 @@ onMounted(async () => {
                       <option value="year">Year</option>
                     </select>
                   </label>
+                  <label class="space-y-2">
+                    <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Result order</span>
+                    <select v-model="liveSearchForm.resultOrder" class="terminal-select">
+                      <option value="relevance">Relevance</option>
+                      <option value="newest">Time (newest first)</option>
+                    </select>
+                  </label>
                 </div>
 
                 <div class="grid gap-3 lg:grid-cols-2">
@@ -973,14 +1211,6 @@ onMounted(async () => {
                       <option :value="true">All available SearxNG engines</option>
                       <option :value="false">Restrict to specific engines</option>
                     </select>
-                  </label>
-                  <label v-if="!liveSearchForm.useAllEngines" class="space-y-2">
-                    <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Restricted engines</span>
-                    <textarea
-                      v-model="liveSearchForm.engines"
-                      class="terminal-textarea min-h-[90px]"
-                      placeholder="google&#10;duckduckgo&#10;arxiv"
-                    />
                   </label>
                   <label class="space-y-2">
                     <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Include domains</span>
@@ -1005,9 +1235,6 @@ onMounted(async () => {
                       class="terminal-textarea min-h-[110px]"
                       placeholder="theme=simple&#10;enabled_plugins=Hash_plugin,Tracker_URL_remover&#10;disabled_plugins=Open_Access_DOI_rewrite"
                     />
-                    <p class="text-xs leading-6 text-[var(--muted)]">
-                      One <span class="text-[var(--text)]">key=value</span> pair per line. This passes through unsupported SearxNG options without changing the core UI.
-                    </p>
                   </label>
                 </div>
 
@@ -1026,24 +1253,48 @@ onMounted(async () => {
                       </button>
                     </div>
                   </div>
-                  <div v-if="availableCategories.length" class="flex flex-wrap gap-2">
-                    <button
-                      v-for="category in availableCategories"
-                      :key="category"
-                      type="button"
-                      class="pill border transition-colors"
-                      :class="
-                        liveSearchForm.categories.includes(category)
-                          ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
-                          : 'border-[var(--line)] bg-black/20 text-[var(--muted)] hover:border-[var(--accent)]/50 hover:text-[var(--text)]'
-                      "
-                      @click="toggleLiveSearchCategory(category)"
-                    >
+                  <select
+                    v-if="availableCategories.length"
+                    v-model="liveSearchForm.categories"
+                    class="terminal-select min-h-[220px]"
+                    multiple
+                  >
+                    <option v-for="category in availableCategories" :key="category" :value="category">
                       {{ category }}
-                    </button>
-                  </div>
+                    </option>
+                  </select>
                   <p v-else class="text-sm text-[var(--muted)]">
                     No categories are advertised by the connected SearxNG instance right now.
+                  </p>
+                </div>
+
+                <div v-if="!liveSearchForm.useAllEngines" class="space-y-3 rounded-[1.3rem] border border-[var(--line)] bg-black/20 p-4">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">
+                      Selected engines: <span class="text-[var(--text)]">{{ liveSearchForm.engines.length }}</span>
+                      / {{ availableEngines.length || '0' }}
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" class="terminal-button terminal-button-secondary" @click="selectAllLiveSearchEngines">
+                        Select all
+                      </button>
+                      <button type="button" class="terminal-button terminal-button-secondary" @click="clearLiveSearchEngines">
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <select
+                    v-if="availableEngines.length"
+                    v-model="liveSearchForm.engines"
+                    class="terminal-select min-h-[220px]"
+                    multiple
+                  >
+                    <option v-for="engine in availableEngines" :key="engine" :value="engine">
+                      {{ engine }}
+                    </option>
+                  </select>
+                  <p v-else class="text-sm text-[var(--muted)]">
+                    No enabled engines are advertised by the connected SearxNG instance right now.
                   </p>
                 </div>
               </div>
@@ -1098,7 +1349,7 @@ onMounted(async () => {
             </div>
 
             <article v-else class="rounded-2xl border border-[var(--line)] bg-black/25 p-5 text-sm text-[var(--muted)]">
-              Run a live search to inspect SearxNG results here. The advanced drawer supports all-category coverage or category restrictions, all-engine coverage or engine restrictions, time ranges, domain filters, and raw passthrough parameters.
+              Run a live search to inspect results here.
             </article>
           </div>
         </section>
@@ -1113,8 +1364,7 @@ onMounted(async () => {
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Save current search</p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">Turn this live query into a recurring tracked topic, with an optional dedicated source scope.</p>
-                  <p class="mt-3 text-xs uppercase tracking-[0.22em] text-[var(--muted)]">
+                  <p class="mt-2 text-xs uppercase tracking-[0.22em] text-[var(--muted)]">
                     Active query: <span class="text-[var(--text)]">{{ liveSearchForm.q || 'n/a' }}</span>
                   </p>
                 </div>
@@ -1180,7 +1430,6 @@ onMounted(async () => {
                 </label>
                 <article class="rounded-2xl border border-[var(--line)] bg-black/25 p-4 text-sm text-[var(--muted)]">
                   <p>Derived lookback: <span class="text-[var(--text)]">{{ deriveLookbackDays(liveSearchForm.timeRange) }} days</span></p>
-                  <p class="mt-2">This dedicated scope will reuse the live category coverage, engine coverage, language, safe-search, and domain filters shown on the left.</p>
                 </article>
               </div>
 
@@ -1204,9 +1453,6 @@ onMounted(async () => {
                     </span>
                   </label>
                 </div>
-                <p class="text-xs leading-6 text-[var(--muted)]">
-                  Leave these empty if you want the new topic to run only against the dedicated scope created from the current live filters.
-                </p>
               </div>
 
               <div class="flex flex-wrap justify-end gap-2">
@@ -1230,10 +1476,9 @@ onMounted(async () => {
         <div class="space-y-5">
           <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
             <div class="relative z-10 space-y-4">
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Topic navigator</p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">Jump into a topic’s results, trigger a fresh run, or clear fresh hits.</p>
                 </div>
                 <button class="terminal-button terminal-button-secondary" :disabled="isLoadingDashboard" @click="refreshAll">
                   Refresh
@@ -1246,7 +1491,7 @@ onMounted(async () => {
                   :key="topic.slug"
                   class="rounded-2xl border border-[var(--line)] bg-black/25 p-4"
                 >
-                  <div class="flex items-start justify-between gap-3">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <div class="flex flex-wrap gap-2">
                         <span class="pill" :class="topic.enabled ? 'text-[var(--accent)]' : 'text-[var(--muted)]'">
@@ -1257,9 +1502,8 @@ onMounted(async () => {
                         </span>
                       </div>
                       <p class="mt-3 text-lg text-white">{{ topic.name }}</p>
-                      <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ topic.description || 'No description yet.' }}</p>
                     </div>
-                    <div class="min-w-[92px] text-right">
+                    <div class="sm:min-w-[92px] sm:text-right">
                       <p class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">New</p>
                       <p class="mt-1 text-3xl text-white">{{ topic.new_results_count }}</p>
                     </div>
@@ -1305,138 +1549,97 @@ onMounted(async () => {
             <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
               <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">New findings</p>
               <p class="mt-3 text-4xl text-white">{{ stats?.new_result_count ?? 0 }}</p>
-              <p class="mt-2 text-sm text-[var(--muted)]">items waiting for review</p>
             </article>
             <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
               <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">Stored results</p>
               <p class="mt-3 text-4xl text-white">{{ stats?.result_count ?? 0 }}</p>
-              <p class="mt-2 text-sm text-[var(--muted)]">records ready to search</p>
             </article>
           </section>
         </div>
 
-        <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
-          <div class="relative z-10 space-y-4">
-            <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Results terminal</p>
-                <p class="mt-1 text-sm text-[var(--muted)]">Search the collected corpus and highlight what is still new.</p>
+        <div class="space-y-5">
+          <SearchMapWorkspace
+            :topic-slug="resultFilters.topic"
+            :topic-name="selectedTopic?.name ?? ''"
+            :q="resultFilters.q"
+            :kind="resultFilters.kind"
+            :is-new-only="resultFilters.isNewOnly"
+          />
+
+          <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
+            <div class="relative z-10 space-y-4">
+              <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                  <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Results terminal</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button class="terminal-button terminal-button-secondary" @click="clearResultFilters">Clear filters</button>
+                  <button class="terminal-button terminal-button-secondary" @click="acknowledgeVisibleResults">Ack visible</button>
+                </div>
               </div>
-              <div class="flex flex-wrap gap-2">
-                <button class="terminal-button terminal-button-secondary" @click="clearResultFilters">Clear filters</button>
-                <button class="terminal-button terminal-button-secondary" @click="acknowledgeVisibleResults">Ack visible</button>
+
+              <div class="grid gap-3 lg:grid-cols-4">
+                <label class="space-y-2 lg:col-span-2">
+                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Search text</span>
+                  <input v-model="resultFilters.q" class="terminal-input" placeholder="zenodo, metadata, exchange format..." />
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Topic filter</span>
+                  <select v-model="resultFilters.topic" class="terminal-select">
+                    <option value="">All topics</option>
+                    <option v-for="topic in topics" :key="topic.slug" :value="topic.slug">{{ topic.name }}</option>
+                  </select>
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Scope kind</span>
+                  <select v-model="resultFilters.kind" class="terminal-select">
+                    <option value="">All kinds</option>
+                    <option value="public">Public</option>
+                    <option value="research">Research</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
               </div>
-            </div>
 
-            <div class="grid gap-3 lg:grid-cols-4">
-              <label class="space-y-2 lg:col-span-2">
-                <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Search text</span>
-                <input v-model="resultFilters.q" class="terminal-input" placeholder="zenodo, metadata, exchange format..." />
+              <label class="flex items-center gap-3 text-sm text-[var(--muted)]">
+                <input v-model="resultFilters.isNewOnly" type="checkbox" class="accent-[var(--accent)]" />
+                Show only new results
               </label>
-              <label class="space-y-2">
-                <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Topic filter</span>
-                <select v-model="resultFilters.topic" class="terminal-select">
-                  <option value="">All topics</option>
-                  <option v-for="topic in topics" :key="topic.slug" :value="topic.slug">{{ topic.name }}</option>
-                </select>
-              </label>
-              <label class="space-y-2">
-                <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Scope kind</span>
-                <select v-model="resultFilters.kind" class="terminal-select">
-                  <option value="">All kinds</option>
-                  <option value="public">Public</option>
-                  <option value="research">Research</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </label>
-            </div>
 
-            <label class="flex items-center gap-3 text-sm text-[var(--muted)]">
-              <input v-model="resultFilters.isNewOnly" type="checkbox" class="accent-[var(--accent)]" />
-              Show only new results
-            </label>
+              <ResponsiveResultsList :results="results" :format-date="formatDate" />
 
-            <div class="overflow-x-auto rounded-2xl border border-[var(--line)] bg-black/25">
-              <table class="data-table min-w-[760px]">
-                <thead>
-                  <tr>
-                    <th>Result</th>
-                    <th>Topic</th>
-                    <th>Scope</th>
-                    <th>When</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="result in results" :key="result.id">
-                    <td>
-                      <div class="space-y-2">
-                        <div class="flex flex-wrap items-center gap-2">
-                          <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">new</span>
-                          <span v-if="result.domain" class="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">{{ result.domain }}</span>
-                        </div>
-                        <a :href="result.url" target="_blank" rel="noreferrer" class="text-base text-white hover:text-[var(--accent)]">
-                          {{ result.title }}
-                        </a>
-                        <p class="max-w-3xl text-sm leading-6 text-[var(--muted)]">{{ result.snippet || result.content || 'No preview available.' }}</p>
-                        <div class="flex flex-wrap gap-2">
-                          <span
-                            v-for="query in result.matched_queries.slice(0, 3)"
-                            :key="query"
-                            class="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] text-[var(--text)]"
-                          >
-                            {{ query }}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="text-sm text-[var(--text)]">{{ result.topic_name }}</td>
-                    <td class="text-sm text-[var(--muted)]">{{ result.source_scope_name || 'n/a' }}</td>
-                    <td class="text-sm text-[var(--muted)]">
-                      <p>Seen {{ formatDate(result.first_seen_at) }}</p>
-                      <p class="mt-2">Published {{ formatDate(result.published_at) }}</p>
-                    </td>
-                  </tr>
-                  <tr v-if="results.length === 0">
-                    <td colspan="4" class="text-center text-sm text-[var(--muted)]">
-                      No results match the current filter set.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="flex items-center justify-between gap-3">
-              <p class="text-sm text-[var(--muted)]">
-                Showing {{ results.length }} of {{ resultsPage?.count ?? 0 }} results
-                <span v-if="selectedTopic"> for {{ selectedTopic.name }}</span>
-              </p>
-              <div class="flex gap-2">
-                <button
-                  class="terminal-button terminal-button-secondary"
-                  :disabled="!resultsPage?.previous"
-                  @click="loadResults(resultFilters.page - 1)"
-                >
-                  Prev
-                </button>
-                <button
-                  class="terminal-button terminal-button-secondary"
-                  :disabled="!resultsPage?.next"
-                  @click="loadResults(resultFilters.page + 1)"
-                >
-                  Next
-                </button>
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm text-[var(--muted)]">
+                  Showing {{ results.length }} of {{ resultsPage?.count ?? 0 }} results
+                  <span v-if="selectedTopic"> for {{ selectedTopic.name }}</span>
+                </p>
+                <div class="flex gap-2">
+                  <button
+                    class="terminal-button terminal-button-secondary"
+                    :disabled="!resultsPage?.previous"
+                    @click="loadResults(resultFilters.page - 1)"
+                  >
+                    Prev
+                  </button>
+                  <button
+                    class="terminal-button terminal-button-secondary"
+                    :disabled="!resultsPage?.next"
+                    @click="loadResults(resultFilters.page + 1)"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </section>
 
       <section v-else-if="activeWorkspace === 'configure'" class="grid gap-5 xl:grid-cols-[1.45fr_0.95fr]">
         <div class="space-y-5">
-          <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Topic matrix</p>
-              <p class="mt-1 text-sm text-[var(--muted)]">Each topic can have its own query stack, term filters, and source scopes.</p>
             </div>
             <div class="flex flex-wrap gap-2">
               <button class="terminal-button terminal-button-secondary" :disabled="isLoadingDashboard" @click="refreshAll">
@@ -1458,7 +1661,7 @@ onMounted(async () => {
               class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5"
             >
               <div class="relative z-10 flex h-full flex-col gap-4">
-                <div class="flex items-start justify-between gap-4">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div class="space-y-2">
                     <div class="flex flex-wrap gap-2">
                       <span class="pill" :class="topic.enabled ? 'text-[var(--accent)]' : 'text-[var(--muted)]'">
@@ -1469,10 +1672,9 @@ onMounted(async () => {
                       </span>
                     </div>
                     <h2 class="text-xl text-white">{{ topic.name }}</h2>
-                    <p class="text-sm leading-6 text-[var(--muted)]">{{ topic.description || 'No description yet.' }}</p>
                   </div>
 
-                  <div class="min-w-[110px] text-right">
+                  <div class="sm:min-w-[110px] sm:text-right">
                     <p class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">New</p>
                     <p class="mt-1 text-3xl text-white">{{ topic.new_results_count }}</p>
                   </div>
@@ -1543,7 +1745,6 @@ onMounted(async () => {
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Provider control</p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">Enable or disable the SearxNG discovery pipeline and confirm crawler connectivity.</p>
                 </div>
               </div>
 
@@ -1581,7 +1782,6 @@ onMounted(async () => {
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">
                     {{ topicEditorMode === 'edit' ? 'Edit topic' : 'Create topic' }}
                   </p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">One query per line. Attach any mix of source scopes below.</p>
                 </div>
                 <button class="terminal-button terminal-button-secondary" @click="resetTopicForm">Reset</button>
               </div>
@@ -1680,7 +1880,6 @@ onMounted(async () => {
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">
                     {{ sourceEditorMode === 'edit' ? 'Edit source scope' : 'Create source scope' }}
                   </p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">Configure public, research, or custom SearxNG search lanes.</p>
                 </div>
                 <button class="terminal-button terminal-button-secondary" @click="resetSourceForm">Reset</button>
               </div>
@@ -1704,7 +1903,12 @@ onMounted(async () => {
                 </label>
                 <label class="space-y-2">
                   <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Language</span>
-                  <input v-model="sourceForm.language" class="terminal-input" placeholder="en-US" />
+                  <select v-model="sourceForm.language" class="terminal-select">
+                    <option value="">Any language</option>
+                    <option v-for="language in availableLanguages" :key="language.code" :value="language.code">
+                      {{ language.label }} ({{ language.code }})
+                    </option>
+                  </select>
                 </label>
                 <label class="space-y-2">
                   <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Safe search</span>
@@ -1726,6 +1930,13 @@ onMounted(async () => {
                     <option value="day">Day</option>
                     <option value="month">Month</option>
                     <option value="year">Year</option>
+                  </select>
+                </label>
+                <label class="space-y-2">
+                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Result order</span>
+                  <select v-model="sourceForm.resultOrder" class="terminal-select">
+                    <option value="relevance">Relevance</option>
+                    <option value="newest">Time (newest first)</option>
                   </select>
                 </label>
                 <label class="space-y-2">
@@ -1761,22 +1972,16 @@ onMounted(async () => {
                       </button>
                     </div>
                   </div>
-                  <div v-if="availableCategories.length" class="flex flex-wrap gap-2">
-                    <button
-                      v-for="category in availableCategories"
-                      :key="`source-${category}`"
-                      type="button"
-                      class="pill border transition-colors"
-                      :class="
-                        sourceForm.searxngCategories.includes(category)
-                          ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
-                          : 'border-[var(--line)] bg-black/20 text-[var(--muted)] hover:border-[var(--accent)]/50 hover:text-[var(--text)]'
-                      "
-                      @click="toggleSourceCategory(category)"
-                    >
+                  <select
+                    v-if="availableCategories.length"
+                    v-model="sourceForm.searxngCategories"
+                    class="terminal-select min-h-[220px]"
+                    multiple
+                  >
+                    <option v-for="category in availableCategories" :key="`source-${category}`" :value="category">
                       {{ category }}
-                    </button>
-                  </div>
+                    </option>
+                  </select>
                   <p v-else class="text-sm text-[var(--muted)]">
                     No categories are advertised by the connected SearxNG instance right now.
                   </p>
@@ -1788,10 +1993,35 @@ onMounted(async () => {
                     <option :value="false">Restrict to specific engines</option>
                   </select>
                 </label>
-                <label v-if="!sourceForm.useAllEngines" class="space-y-2 sm:col-span-2">
-                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Restricted engines</span>
-                  <textarea v-model="sourceForm.searxngEngines" class="terminal-textarea min-h-[90px]" placeholder="duckduckgo&#10;wikipedia&#10;pubmed" />
-                </label>
+                <div v-if="!sourceForm.useAllEngines" class="space-y-3 rounded-[1.3rem] border border-[var(--line)] bg-black/20 p-4 sm:col-span-2">
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">
+                      Selected engines: <span class="text-[var(--text)]">{{ sourceForm.searxngEngines.length }}</span>
+                      / {{ availableEngines.length || '0' }}
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" class="terminal-button terminal-button-secondary" @click="selectAllSourceEngines">
+                        Select all
+                      </button>
+                      <button type="button" class="terminal-button terminal-button-secondary" @click="clearSourceEngines">
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  <select
+                    v-if="availableEngines.length"
+                    v-model="sourceForm.searxngEngines"
+                    class="terminal-select min-h-[220px]"
+                    multiple
+                  >
+                    <option v-for="engine in availableEngines" :key="`source-engine-${engine}`" :value="engine">
+                      {{ engine }}
+                    </option>
+                  </select>
+                  <p v-else class="text-sm text-[var(--muted)]">
+                    No enabled engines are advertised by the connected SearxNG instance right now.
+                  </p>
+                </div>
                 <label class="space-y-2 sm:col-span-2">
                   <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Include domains</span>
                   <textarea v-model="sourceForm.includeDomains" class="terminal-textarea min-h-[90px]" placeholder="zenodo.org&#10;figshare.com" />
@@ -1818,7 +2048,7 @@ onMounted(async () => {
                   <div>
                     <p class="text-sm text-[var(--text)]">{{ source.name }}</p>
                     <p class="mt-1 text-xs text-[var(--muted)]">
-                      {{ source.kind }} / {{ describeCategories(source) }} / {{ describeEngines(source) }}
+                      {{ source.kind }} / {{ describeCategories(source) }} / {{ describeEngines(source) }} / {{ describeResultOrder(source) }}
                     </p>
                   </div>
                   <div class="flex flex-wrap gap-2">
@@ -1837,22 +2067,19 @@ onMounted(async () => {
           <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
             <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">Tracked topics</p>
             <p class="mt-3 text-4xl text-white">{{ stats?.topic_count ?? 0 }}</p>
-            <p class="mt-2 text-sm text-[var(--muted)]">{{ stats?.enabled_topic_count ?? 0 }} enabled with their own schedules</p>
           </article>
           <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
             <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">Runs</p>
             <p class="mt-3 text-4xl text-white">{{ stats?.run_count ?? 0 }}</p>
-            <p class="mt-2 text-sm text-[var(--muted)]">{{ stats?.successful_run_count ?? 0 }} completed cleanly</p>
           </article>
           <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
             <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">Success rate</p>
             <p class="mt-3 text-4xl text-white">{{ runSuccessRate }}%</p>
-            <p class="mt-2 text-sm text-[var(--muted)]">based on recorded runs</p>
           </article>
           <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
             <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">Latest run</p>
             <p class="mt-3 text-lg text-white">{{ latestRun?.topic_name || 'No runs yet' }}</p>
-            <p class="mt-2 text-sm text-[var(--muted)]">{{ latestRun ? formatDate(latestRun.started_at) : 'Trigger a run to begin telemetry.' }}</p>
+            <p v-if="latestRun" class="mt-2 text-sm text-[var(--muted)]">{{ formatDate(latestRun.started_at) }}</p>
           </article>
         </section>
 
@@ -1862,7 +2089,6 @@ onMounted(async () => {
               <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Run history</p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">The last execution traces for scheduled or manual searches.</p>
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button class="terminal-button terminal-button-secondary" @click="clearRunFilters">Clear filters</button>
@@ -1942,7 +2168,6 @@ onMounted(async () => {
               <div class="relative z-10 space-y-4">
                 <div>
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Topic pulse</p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">See which topics are active, fresh, and ready for inspection.</p>
                 </div>
 
                 <div class="space-y-3">
@@ -1962,7 +2187,7 @@ onMounted(async () => {
                       </span>
                     </div>
 
-                    <div class="mt-4 grid gap-3 grid-cols-3">
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
                       <div>
                         <p class="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">New</p>
                         <p class="mt-2 text-xl text-white">{{ topic.new_results_count }}</p>
@@ -1990,7 +2215,6 @@ onMounted(async () => {
               <div class="relative z-10 space-y-3">
                 <div>
                   <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Pipeline status</p>
-                  <p class="mt-1 text-sm text-[var(--muted)]">Quick health snapshot for the discovery and parsing stack.</p>
                 </div>
 
                 <div class="rounded-2xl border border-[var(--line)] bg-black/20 p-4 text-sm text-[var(--muted)]">
@@ -2009,6 +2233,7 @@ onMounted(async () => {
           </div>
         </section>
       </section>
+      </template>
     </main>
   </div>
 </template>

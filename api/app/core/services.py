@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Iterable
 from datetime import datetime, time
-from functools import lru_cache
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
@@ -19,6 +18,7 @@ from .models import (
     SearchTopic,
     SourceScope,
 )
+from .result_locations import refresh_result_locations
 
 
 def clean_string_list(values):
@@ -148,6 +148,69 @@ def searxng_result_snippet(item: dict) -> str:
     )
 
 
+def searxng_result_published_at(item: dict):
+    return parse_result_datetime(
+        item.get("publishedDate")
+        or item.get("published_date")
+        or item.get("publishedAt")
+        or item.get("published_at")
+        or item.get("date")
+    )
+
+
+def searxng_result_score(item: dict) -> float | None:
+    score = item.get("score")
+    try:
+        return float(score)
+    except (TypeError, ValueError):
+        return None
+
+
+def searxng_result_timestamp(item: dict) -> float | None:
+    published_at = searxng_result_published_at(item)
+    if not published_at:
+        return None
+    return published_at.timestamp()
+
+
+def normalize_result_order(value: str | None) -> str:
+    if value == SourceScope.ResultOrder.NEWEST:
+        return SourceScope.ResultOrder.NEWEST
+    return SourceScope.ResultOrder.RELEVANCE
+
+
+def sort_search_items(items: list[dict], result_order: str, max_results: int | None = None) -> list[dict]:
+    normalized_order = normalize_result_order(result_order)
+    indexed_items = list(enumerate(items))
+
+    if normalized_order == SourceScope.ResultOrder.NEWEST:
+        indexed_items.sort(
+            key=lambda pair: (
+                searxng_result_timestamp(pair[1]) is not None,
+                searxng_result_timestamp(pair[1]) or float("-inf"),
+                searxng_result_score(pair[1]) is not None,
+                searxng_result_score(pair[1]) or float("-inf"),
+                -pair[0],
+            ),
+            reverse=True,
+        )
+    else:
+        if any(searxng_result_score(item) is not None for item in items):
+            indexed_items.sort(
+                key=lambda pair: (
+                    searxng_result_score(pair[1]) is not None,
+                    searxng_result_score(pair[1]) or float("-inf"),
+                    -pair[0],
+                ),
+                reverse=True,
+            )
+
+    ordered_items = [item for _, item in indexed_items]
+    if max_results:
+        return ordered_items[:max_results]
+    return ordered_items
+
+
 class SearxNGClient:
     def __init__(self, base_url: str, timeout_s: float):
         if not base_url:
@@ -177,26 +240,122 @@ class SearxNGClient:
         return response.json()
 
 
-@lru_cache(maxsize=1)
-def _searxng_categories_cache_key() -> str:
-    return "core:searxng:available_categories"
+SEARXNG_CONFIG_CACHE_KEY = "core:searxng:config"
 
 
-def load_searxng_categories() -> list[str]:
-    cache_key = _searxng_categories_cache_key()
-    cached = cache.get(cache_key)
-    if cached is not None:
-        return clean_string_list(cached)
+def load_searxng_config() -> dict:
+    cached = cache.get(SEARXNG_CONFIG_CACHE_KEY)
+    if isinstance(cached, dict):
+        return cached
 
     try:
         client = SearxNGClient(settings.SEARXNG_BASE_URL, settings.SEARXNG_TIMEOUT_S)
         payload = client.config()
-        categories = clean_string_list(payload.get("categories") or [])
+        if not isinstance(payload, dict):
+            payload = {}
     except (ValueError, httpx.HTTPError):
-        categories = []
+        payload = {}
 
-    cache.set(cache_key, categories, timeout=300)
-    return categories
+    cache.set(SEARXNG_CONFIG_CACHE_KEY, payload, timeout=300)
+    return payload
+
+
+def load_searxng_categories() -> list[str]:
+    payload = load_searxng_config()
+    return clean_string_list(payload.get("categories") or [])
+
+
+def load_searxng_engines() -> list[str]:
+    payload = load_searxng_config()
+    raw_engines = payload.get("engines") or []
+    if not isinstance(raw_engines, list):
+        return []
+
+    available = []
+    seen = set()
+    for item in raw_engines:
+        if isinstance(item, dict):
+            if not item.get("enabled", True):
+                continue
+            name = str(item.get("name") or "").strip()
+        else:
+            name = str(item).strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        available.append(name)
+
+    return sorted(available, key=str.lower)
+
+
+def load_searxng_locales() -> dict[str, str]:
+    payload = load_searxng_config()
+    raw_locales = payload.get("locales") or {}
+    if not isinstance(raw_locales, dict):
+        return {}
+
+    cleaned = {}
+    for code, label in raw_locales.items():
+        clean_code = str(code).strip()
+        if not clean_code:
+            continue
+        clean_label = str(label).strip() or clean_code
+        cleaned[clean_code] = clean_label
+    return cleaned
+
+
+def load_searxng_language_options() -> list[dict[str, str]]:
+    locales = load_searxng_locales()
+    return [
+        {"code": code, "label": label}
+        for code, label in sorted(locales.items(), key=lambda item: item[1].lower())
+    ]
+
+
+def normalize_searxng_engines(values) -> list[str]:
+    engines = clean_string_list(values)
+    available = load_searxng_engines()
+    if not available:
+        return engines
+
+    lookup = {engine.lower(): engine for engine in available}
+    normalized = []
+    seen = set()
+    for engine in engines:
+        match = lookup.get(engine.lower(), engine)
+        if match in seen:
+            continue
+        seen.add(match)
+        normalized.append(match)
+    return normalized
+
+
+def normalize_searxng_language(value: str | None) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+
+    locales = load_searxng_locales()
+    if not locales:
+        return text
+
+    lookup = {code.lower(): code for code in locales}
+    normalized = text.replace("_", "-")
+    candidates = [text, normalized]
+
+    for candidate in candidates:
+        if candidate in locales:
+            return candidate
+        matched = lookup.get(candidate.lower())
+        if matched:
+            return matched
+
+    base_language = normalized.split("-", 1)[0]
+    matched = lookup.get(base_language.lower())
+    if matched:
+        return matched
+
+    return text
 
 
 def resolve_searxng_categories(values, use_all_categories: bool) -> list[str]:
@@ -415,13 +574,14 @@ def build_searxng_params(topic: SearchTopic, source_scope: SourceScope, query: s
         source_scope.searxng_categories,
         getattr(source_scope, "use_all_categories", True),
     )
-    engines = clean_string_list(source_scope.searxng_engines)
+    engines = normalize_searxng_engines(source_scope.searxng_engines)
     if categories:
         params["categories"] = ",".join(categories)
     if not getattr(source_scope, "use_all_engines", True) and engines:
         params["engines"] = ",".join(engines)
-    if source_scope.language:
-        params["language"] = source_scope.language
+    language = normalize_searxng_language(source_scope.language)
+    if language:
+        params["language"] = language
     time_range = resolve_time_range(topic.lookback_days, source_scope)
     if time_range:
         params["time_range"] = time_range
@@ -452,14 +612,15 @@ def build_direct_searxng_params(payload: dict) -> dict:
         payload.get("use_all_categories", True),
     )
     use_all_engines = payload.get("use_all_engines", True)
-    engines = clean_string_list(payload.get("engines"))
+    engines = normalize_searxng_engines(payload.get("engines"))
 
     if categories:
         params["categories"] = ",".join(categories)
     if not use_all_engines and engines:
         params["engines"] = ",".join(engines)
-    if payload.get("language"):
-        params["language"] = str(payload["language"]).strip()
+    language = normalize_searxng_language(payload.get("language"))
+    if language:
+        params["language"] = language
     if payload.get("time_range"):
         params["time_range"] = payload["time_range"]
 
@@ -484,17 +645,19 @@ def run_direct_searxng_search(payload: dict) -> dict:
     include_domains = payload.get("include_domains") or []
     exclude_domains = payload.get("exclude_domains") or []
     max_results = int(payload.get("max_results") or 10)
+    result_order = normalize_result_order(payload.get("result_order"))
     search_payload = merge_searxng_responses(
         client,
         params,
-        max_results=max_results,
+        max_results=None if result_order == SourceScope.ResultOrder.NEWEST else max_results,
         include_domains=include_domains,
         exclude_domains=exclude_domains,
         batch_timeout_s=min(settings.SEARXNG_TIMEOUT_S, 12.0),
     )
 
     results = []
-    for item in search_payload.get("results", []):
+    ordered_items = sort_search_items(search_payload.get("results", []), result_order, max_results)
+    for item in ordered_items:
         url = str(item.get("url") or "").strip()
         if not url:
             continue
@@ -509,13 +672,7 @@ def run_direct_searxng_search(payload: dict) -> dict:
                 "snippet": searxng_result_snippet(item)[:1200],
                 "engine": str(item.get("engine") or ""),
                 "engines": clean_string_list(item.get("engines") or []),
-                "published_at": (
-                    item.get("publishedDate")
-                    or item.get("published_date")
-                    or item.get("publishedAt")
-                    or item.get("published_at")
-                    or item.get("date")
-                ),
+                "published_at": searxng_result_published_at(item),
                 "score": item.get("score"),
                 "category": str(item.get("category") or ""),
                 "thumbnail": item.get("thumbnail") or item.get("img_src") or "",
@@ -528,6 +685,7 @@ def run_direct_searxng_search(payload: dict) -> dict:
     return {
         "query": payload["q"],
         "params": params,
+        "result_order": result_order,
         "executed_params": search_payload["executed_params"],
         "request_count": search_payload["request_count"],
         "result_count": len(results),
@@ -563,13 +721,7 @@ def upsert_search_result(
     snippet = searxng_result_snippet(item)[:1200]
     favicon_url = item.get("thumbnail") or item.get("img_src") or ""
     score = item.get("score")
-    published_at = parse_result_datetime(
-        item.get("publishedDate")
-        or item.get("published_date")
-        or item.get("publishedAt")
-        or item.get("published_at")
-        or item.get("date")
-    )
+    published_at = searxng_result_published_at(item)
 
     result, created = SearchResult.objects.get_or_create(
         topic=topic,
@@ -594,6 +746,7 @@ def upsert_search_result(
     )
 
     if created:
+        refresh_result_locations(result)
         return result, True, True
 
     matched_queries = clean_string_list(result.matched_queries)
@@ -619,6 +772,7 @@ def upsert_search_result(
     result.last_seen_at = now
     result.raw_result = raw_result
     result.save()
+    refresh_result_locations(result)
     return result, False, not bool(result.content)
 
 
@@ -640,6 +794,7 @@ def apply_crawl_content(result: SearchResult, crawl_payload: dict | None):
 
     result.raw_result = raw_result
     result.save(update_fields=["content", "snippet", "raw_result", "updated_at"])
+    refresh_result_locations(result)
 
 
 def run_topic_search(topic: SearchTopic) -> SearchRun:
@@ -683,10 +838,12 @@ def run_topic_search(topic: SearchTopic) -> SearchRun:
         for source_scope in source_scopes:
             for built_query in queries:
                 params = build_searxng_params(topic, source_scope, built_query)
+                result_limit = min(topic.max_results_per_query, source_scope.max_results)
+                result_order = normalize_result_order(getattr(source_scope, "result_order", None))
                 search_payload = merge_searxng_responses(
                     client,
                     params,
-                    max_results=min(topic.max_results_per_query, source_scope.max_results),
+                    max_results=None if result_order == SourceScope.ResultOrder.NEWEST else result_limit,
                     include_domains=source_scope.include_domains,
                     exclude_domains=source_scope.exclude_domains,
                     batch_timeout_s=min(settings.SEARXNG_TIMEOUT_S, 20.0),
@@ -694,7 +851,12 @@ def run_topic_search(topic: SearchTopic) -> SearchRun:
 
                 request_count += search_payload["request_count"]
                 accepted_results = 0
-                for item in search_payload.get("results", []):
+                ordered_items = sort_search_items(
+                    search_payload.get("results", []),
+                    result_order,
+                    result_limit,
+                )
+                for item in ordered_items:
                     result, is_new, needs_crawl = upsert_search_result(
                         topic=topic,
                         source_scope=source_scope,
@@ -720,9 +882,11 @@ def run_topic_search(topic: SearchTopic) -> SearchRun:
                         "scope": source_scope.name,
                         "query": built_query,
                         "params": params,
+                        "result_order": result_order,
                         "executed_params": search_payload["executed_params"],
                         "accepted_results": accepted_results,
                         "response_result_count": len(search_payload.get("results", [])),
+                        "ordered_result_count": len(ordered_items),
                         "warnings": search_payload["warnings"],
                     }
                 )

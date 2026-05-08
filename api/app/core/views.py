@@ -1,13 +1,15 @@
-from django.db.models import Count, Q
+from django.conf import settings
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.views.decorators.http import require_GET
 import httpx
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+from .models import SearchProviderConfig, SearchRun
+from .querysets import owned_results, owned_runs, owned_source_scopes, owned_topics
+from .social_auth import build_social_provider_payload
 from .serializers import (
     SearxNGSearchRequestSerializer,
     SearchProviderConfigSerializer,
@@ -33,37 +35,34 @@ def csrf(request):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def dashboard(_request):
+def auth_providers(request):
+    providers = [
+        build_social_provider_payload(provider["id"], provider["name"], request)
+        for provider in getattr(settings, "SOCIAL_LOGIN_PROVIDERS", [])
+    ]
+    return Response({"providers": providers})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def dashboard(request):
     provider = SearchProviderConfig.load()
-    topics = (
-        SearchTopic.objects.prefetch_related("source_scopes")
-        .annotate(
-            result_count=Count("results", distinct=True),
-            new_results_count=Count(
-                "results",
-                filter=Q(results__is_new=True),
-                distinct=True,
-            ),
-        )
-        .order_by("name")
-    )
-    results = (
-        SearchResult.objects.select_related("topic", "source_scope", "last_run")
-        .order_by("-is_new", "-published_at", "-first_seen_at")[:10]
-    )
-    runs = SearchRun.objects.select_related("topic").order_by("-started_at")[:10]
-    sources = SourceScope.objects.order_by("sort_order", "name")
+    user = request.user
+    topics = owned_topics(user).order_by("name")
+    results = owned_results(user).order_by("-is_new", "-published_at", "-first_seen_at")[:10]
+    runs = owned_runs(user).order_by("-started_at")[:10]
+    sources = owned_source_scopes(user).order_by("sort_order", "name")
 
     payload = {
         "provider": SearchProviderConfigSerializer(provider).data,
         "stats": {
-            "topic_count": SearchTopic.objects.count(),
-            "enabled_topic_count": SearchTopic.objects.filter(enabled=True).count(),
-            "source_count": SourceScope.objects.count(),
-            "result_count": SearchResult.objects.count(),
-            "new_result_count": SearchResult.objects.filter(is_new=True).count(),
-            "run_count": SearchRun.objects.count(),
-            "successful_run_count": SearchRun.objects.filter(
+            "topic_count": topics.count(),
+            "enabled_topic_count": topics.filter(enabled=True).count(),
+            "source_count": sources.count(),
+            "result_count": owned_results(user).count(),
+            "new_result_count": owned_results(user).filter(is_new=True).count(),
+            "run_count": owned_runs(user).count(),
+            "successful_run_count": owned_runs(user).filter(
                 status=SearchRun.Status.SUCCEEDED
             ).count(),
         },
@@ -76,7 +75,7 @@ def dashboard(_request):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def searxng_search(request):
     serializer = SearxNGSearchRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)

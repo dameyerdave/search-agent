@@ -1,9 +1,12 @@
-from django.db.models import Count, Q
+from django.db.models import Q
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .map_serializers import SearchResultMapResponseSerializer
 from .models import SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+from .querysets import owned_results, owned_runs, owned_source_scopes, owned_topics
+from .result_locations import build_result_location_map_payload
 from .serializers import (
     SearchProviderConfigSerializer,
     SearchResultSerializer,
@@ -14,45 +17,46 @@ from .serializers import (
 from .services import run_topic_search
 
 
-def topic_queryset():
-    return SearchTopic.objects.prefetch_related("source_scopes").annotate(
-        result_count=Count("results", distinct=True),
-        new_results_count=Count(
-            "results",
-            filter=Q(results__is_new=True),
-            distinct=True,
-        ),
-    )
-
-
 class SourceScopeViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.AllowAny]
-    queryset = SourceScope.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = SourceScope.objects.none()
     serializer_class = SourceScopeSerializer
+
+    def get_queryset(self):
+        return owned_source_scopes(self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 
 class SearchTopicViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.AllowAny]
-    queryset = topic_queryset()
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = SearchTopic.objects.none()
     serializer_class = SearchTopicSerializer
     lookup_field = "slug"
 
+    def get_queryset(self):
+        return owned_topics(self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
     @action(detail=True, methods=["post"])
     def run_now(self, request, slug=None):
-        topic = SearchTopic.objects.get(slug=slug)
+        topic = self.get_object()
         run = run_topic_search(topic)
         serializer = SearchRunSerializer(run)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"])
     def acknowledge(self, request, slug=None):
-        topic = SearchTopic.objects.get(slug=slug)
+        topic = self.get_object()
         updated = topic.results.filter(is_new=True).update(is_new=False)
         return Response({"acknowledged": updated})
 
 
 class SearchProviderConfigViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
     queryset = SearchProviderConfig.objects.all()
     serializer_class = SearchProviderConfigSerializer
     http_method_names = ["get", "patch", "put", "head", "options"]
@@ -63,12 +67,12 @@ class SearchProviderConfigViewSet(viewsets.ModelViewSet):
 
 
 class SearchRunViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [permissions.AllowAny]
-    queryset = SearchRun.objects.select_related("topic").all()
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = SearchRun.objects.none()
     serializer_class = SearchRunSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = owned_runs(self.request.user)
         topic = self.request.query_params.get("topic")
         status_value = self.request.query_params.get("status")
         if topic:
@@ -79,12 +83,12 @@ class SearchRunViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [permissions.AllowAny]
-    queryset = SearchResult.objects.select_related("topic", "source_scope", "last_run").all()
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = SearchResult.objects.none()
     serializer_class = SearchResultSerializer
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = owned_results(self.request.user)
         topic = self.request.query_params.get("topic")
         scope = self.request.query_params.get("scope")
         kind = self.request.query_params.get("kind")
@@ -109,11 +113,17 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
             )
         return queryset
 
+    @action(detail=False, methods=["get"], url_path="map")
+    def map(self, _request):
+        payload = build_result_location_map_payload(self.get_queryset())
+        serializer = SearchResultMapResponseSerializer(payload)
+        return Response(serializer.data)
+
     @action(detail=False, methods=["post"])
     def acknowledge(self, request):
         ids = request.data.get("ids") or []
         topic_slug = request.data.get("topic")
-        queryset = SearchResult.objects.filter(is_new=True)
+        queryset = owned_results(request.user).filter(is_new=True)
         if ids:
             queryset = queryset.filter(id__in=ids)
         if topic_slug:
