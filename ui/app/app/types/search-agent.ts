@@ -66,16 +66,23 @@ export interface ProviderConfig {
   updated_at: string
 }
 
-export interface SocialAuthProvider {
-  id: string
-  name: string
-  login_path: string
-  login_url: string
-  callback_url: string
+export interface AuthenticatedUser {
+  pk: number
+  username: string
+  email: string
+  first_name: string
+  last_name: string
 }
 
-export interface SocialAuthProvidersPayload {
-  providers: SocialAuthProvider[]
+export interface CloudflareAccessUrls {
+  login_url: string | null
+  logout_url: string | null
+}
+
+export interface AuthenticatedUserResponse {
+  authenticated: boolean
+  user: AuthenticatedUser | null
+  cloudflare_access: CloudflareAccessUrls
 }
 
 export interface SearchRun {

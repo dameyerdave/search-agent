@@ -34,8 +34,6 @@ const showAdvancedSearch = ref(false)
 const showLiveSearchSaveDialog = ref(false)
 const liveSearchPage = ref(1)
 const liveSearchHasMore = ref(false)
-const loginUsername = ref('')
-const loginPassword = ref('')
 
 const topicEditorMode = ref<'create' | 'edit'>('create')
 const sourceEditorMode = ref<'create' | 'edit'>('create')
@@ -139,33 +137,6 @@ const stats = computed(() => dashboard.value?.stats ?? null)
 const results = computed(() => resultsPage.value?.results ?? [])
 const runs = computed(() => runsPage.value?.results ?? [])
 const liveSearchResults = computed(() => liveSearchResponse.value?.results ?? [])
-const canSaveLiveSearch = computed(() => Boolean(liveSearchForm.q.trim()))
-const liveSearchLoadedCount = computed(() => liveSearchResults.value.length)
-const canLoadMoreLiveSearch = computed(
-  () =>
-    liveSearchHasMore.value
-    && liveSearchResponse.value?.query === liveSearchForm.q.trim()
-    && liveSearchResponse.value?.result_order === liveSearchForm.resultOrder,
-)
-const authProviders = computed(() => authStore.providers)
-const currentUserLabel = computed(() => {
-  const firstName = authStore.user?.first_name?.trim()
-  const lastName = authStore.user?.last_name?.trim()
-  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
-  return fullName || authStore.user?.username || authStore.user?.email || 'operator'
-})
-const localLoginDisabled = computed(
-  () => authStore.isLoading || !loginUsername.value.trim() || !loginPassword.value,
-)
-
-const selectedTopic = computed(() => topics.value.find((topic) => topic.slug === resultFilters.topic) ?? null)
-const selectedRunTopic = computed(() => topics.value.find((topic) => topic.slug === runFilters.topic) ?? null)
-const latestRun = computed(() => runs.value[0] ?? null)
-const runSuccessRate = computed(() => {
-  const totalRuns = stats.value?.run_count ?? 0
-  if (!totalRuns) return 0
-  return Math.round(((stats.value?.successful_run_count ?? 0) / totalRuns) * 100)
-})
 const workspaceTabs = [
   {
     key: 'search',
@@ -188,6 +159,35 @@ const workspaceTabs = [
     eyebrow: 'telemetry + history',
   },
 ] as const
+const canSaveLiveSearch = computed(() => Boolean(liveSearchForm.q.trim()))
+const canSaveLiveSearchAsTopic = computed(() => authStore.isAuthenticated && canSaveLiveSearch.value)
+const liveSearchLoadedCount = computed(() => liveSearchResults.value.length)
+const canLoadMoreLiveSearch = computed(
+  () =>
+    liveSearchHasMore.value
+    && liveSearchResponse.value?.query === liveSearchForm.q.trim()
+    && liveSearchResponse.value?.result_order === liveSearchForm.resultOrder,
+)
+const visibleWorkspaceTabs = computed(() =>
+  authStore.isAuthenticated
+    ? workspaceTabs
+    : workspaceTabs.filter((tab) => tab.key === 'search'),
+)
+const currentUserLabel = computed(() => {
+  const firstName = authStore.user?.first_name?.trim()
+  const lastName = authStore.user?.last_name?.trim()
+  const fullName = [firstName, lastName].filter(Boolean).join(' ').trim()
+  return fullName || authStore.user?.username || authStore.user?.email || 'operator'
+})
+
+const selectedTopic = computed(() => topics.value.find((topic) => topic.slug === resultFilters.topic) ?? null)
+const selectedRunTopic = computed(() => topics.value.find((topic) => topic.slug === runFilters.topic) ?? null)
+const latestRun = computed(() => runs.value[0] ?? null)
+const runSuccessRate = computed(() => {
+  const totalRuns = stats.value?.run_count ?? 0
+  if (!totalRuns) return 0
+  return Math.round(((stats.value?.successful_run_count ?? 0) / totalRuns) * 100)
+})
 
 const dateFormatter = new Intl.DateTimeFormat('en-CH', {
   dateStyle: 'medium',
@@ -226,7 +226,7 @@ const normalizeLanguageCode = (value: string) => {
     return normalized.code
   }
 
-  const baseLanguage = dashed.split('-', 1)[0]
+  const baseLanguage = dashed.split('-', 1)[0] ?? dashed
   const baseMatch = options.find((option) => option.code.toLowerCase() === baseLanguage.toLowerCase())
   if (baseMatch) {
     return baseMatch.code
@@ -387,7 +387,7 @@ const resetDashboardState = () => {
   dashboard.value = null
   resultsPage.value = null
   runsPage.value = null
-  busyLabel.value = 'Awaiting operator authentication...'
+  busyLabel.value = 'Awaiting Cloudflare Access identity...'
   errorMessage.value = ''
 }
 
@@ -402,6 +402,10 @@ const resetLiveSearchWorkspace = () => {
 }
 
 const openLiveSearchSaveDialog = () => {
+  if (!authStore.isAuthenticated) {
+    errorMessage.value = 'Sign in through Cloudflare Access to save this search as a topic.'
+    return
+  }
   if (!liveSearchForm.q.trim()) {
     errorMessage.value = 'Enter a search query before saving it as a topic.'
     return
@@ -487,7 +491,8 @@ const openSourceEditor = (source?: SourceScope) => {
   })
 }
 
-const runLiveSearch = async (append = false) => {
+const runLiveSearch = async (appendOrEvent: boolean | Event = false) => {
+  const append = typeof appendOrEvent === 'boolean' ? appendOrEvent : false
   const query = liveSearchForm.q.trim()
   if (!query) {
     errorMessage.value = 'Enter a search query before launching SearxNG.'
@@ -622,25 +627,6 @@ const saveLiveSearchAsTopic = async () => {
   } finally {
     isSavingLiveSearchTopic.value = false
   }
-}
-
-const loginWithPassword = async () => {
-  authStore.clearError()
-  errorMessage.value = ''
-
-  const ok = await authStore.login(loginUsername.value.trim(), loginPassword.value)
-  if (!ok) {
-    return
-  }
-
-  loginPassword.value = ''
-  await refreshAll()
-}
-
-const logoutUser = async () => {
-  await authStore.logout()
-  loginPassword.value = ''
-  resetDashboardState()
 }
 
 const loadDashboard = async () => {
@@ -906,6 +892,17 @@ const clearSourceEngines = () => {
   sourceForm.searxngEngines = []
 }
 
+const reloadAccessIdentity = () => {
+  window.location.reload()
+}
+
+const handleLogout = async () => {
+  await authStore.logout()
+  resetDashboardState()
+  activeWorkspace.value = 'search'
+  closeLiveSearchSaveDialog()
+}
+
 const debouncedResultsReload = useDebounceFn(async () => {
   await loadResults(1)
 }, 250)
@@ -925,6 +922,16 @@ watch(
   () => [runFilters.topic, runFilters.status],
   () => {
     debouncedRunsReload()
+  },
+)
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (!isAuthenticated) {
+      activeWorkspace.value = 'search'
+      closeLiveSearchSaveDialog()
+    }
   },
 )
 
@@ -966,33 +973,29 @@ onMounted(async () => {
                   isBootstrappingAuth
                     ? 'Checking'
                     : authStore.isAuthenticated
-                      ? 'Signed in'
-                      : 'Sign in'
+                      ? 'Verified'
+                      : 'Required'
                 }}
               </p>
               <p class="mt-1 text-xs text-[var(--muted)]">
                 {{
                   isBootstrappingAuth
-                    ? 'Verifying the current session'
+                    ? 'Verifying identity...'
                     : authStore.isAuthenticated
                       ? currentUserLabel
-                      : 'Session required'
+                      : 'Not signed in'
                 }}
               </p>
-              <div v-if="authStore.isAuthenticated" class="mt-4">
-                <button class="terminal-button terminal-button-secondary" :disabled="authStore.isLoading" @click="logoutUser">
-                  {{ authStore.isLoading ? 'Signing out...' : 'Sign out' }}
+              <div v-if="authStore.isAuthenticated" class="mt-3">
+                <button class="terminal-button terminal-button-secondary text-xs" @click="handleLogout">
+                  Sign out
                 </button>
               </div>
             </div>
             <div class="rounded-2xl border border-[var(--line)] bg-black/30 p-4">
-              <p class="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">
-                {{ authStore.isAuthenticated ? 'Status' : 'Login routes' }}
-              </p>
-              <p class="mt-2 text-sm text-white">
-                {{ authStore.isAuthenticated ? busyLabel : `${authProviders.length} social provider${authProviders.length === 1 ? '' : 's'}` }}
-              </p>
+              <p class="text-xs uppercase tracking-[0.25em] text-[var(--muted)]">Status</p>
               <template v-if="authStore.isAuthenticated">
+                <p class="mt-2 text-sm text-white">{{ busyLabel }}</p>
                 <p class="mt-4 text-xs text-[var(--muted)]">
                   SearxNG:
                   <span class="text-[var(--accent)]">{{ provider?.searxng_base_url || 'n/a' }}</span>
@@ -1004,6 +1007,22 @@ onMounted(async () => {
                   </span>
                 </p>
               </template>
+              <template v-else-if="isBootstrappingAuth">
+                <p class="mt-2 text-sm text-[var(--muted)]">Checking authentication...</p>
+              </template>
+              <template v-else>
+                <p class="mt-2 text-sm text-white">
+                  {{ authStore.error ? 'Auth service unavailable' : 'Live search available' }}
+                </p>
+                <p class="mt-1 text-xs text-[var(--muted)]">
+                  {{ authStore.error || 'Sign in to access saved searches and operator workspaces.' }}
+                </p>
+                <div class="mt-4">
+                  <button class="terminal-button terminal-button-primary" @click="authStore.signIn()">
+                    Sign in
+                  </button>
+                </div>
+              </template>
             </div>
           </div>
         </div>
@@ -1013,84 +1032,40 @@ onMounted(async () => {
         v-if="isBootstrappingAuth"
         class="rounded-2xl border border-[var(--line)] bg-black/30 px-4 py-6 text-sm text-[var(--muted)]"
       >
-        Checking session...
+        Checking Cloudflare Access...
       </section>
 
-      <template v-else-if="!authStore.isAuthenticated">
-        <section class="terminal-panel relative overflow-hidden rounded-[1.6rem] p-5 sm:p-7">
-          <div class="relative z-10 grid gap-6 lg:grid-cols-[1.08fr_0.92fr]">
-            <div class="space-y-4">
-              <div>
-                <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Access gate</p>
-              </div>
-
-              <div class="rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-4">
-                <p class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Social login</p>
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                  <button
-                    v-for="providerOption in authProviders"
-                    :key="providerOption.id"
-                    class="terminal-button terminal-button-primary justify-center"
-                    :disabled="authStore.isLoadingProviders"
-                    @click="authStore.startSocialLogin(providerOption.id)"
-                  >
-                    Continue with {{ providerOption.name }}
-                  </button>
-                  <article
-                    v-if="!authProviders.length && !authStore.isLoadingProviders"
-                    class="rounded-2xl border border-dashed border-[var(--line)] bg-black/20 p-4 text-sm text-[var(--muted)] sm:col-span-2"
-                  >
-                    No social providers configured.
-                  </article>
-                </div>
-              </div>
+      <template v-else>
+        <section
+          v-if="!authStore.isAuthenticated"
+          class="terminal-panel relative overflow-hidden rounded-[1.6rem] p-5 sm:p-7"
+        >
+          <div class="relative z-10 space-y-5">
+            <div>
+              <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">
+                Public live search enabled
+              </p>
             </div>
 
-            <div class="rounded-[1.4rem] border border-[var(--line)] bg-black/25 p-5">
-              <div class="space-y-3">
-                <div>
-                  <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">Local operator login</p>
-                </div>
-
-                <label class="space-y-2">
-                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Username</span>
-                  <input v-model="loginUsername" class="terminal-input" autocomplete="username" placeholder="admin" />
-                </label>
-                <label class="space-y-2">
-                  <span class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">Password</span>
-                  <input
-                    v-model="loginPassword"
-                    class="terminal-input"
-                    type="password"
-                    autocomplete="current-password"
-                    placeholder="••••••••"
-                    @keyup.enter="loginWithPassword"
-                  />
-                </label>
-
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    class="terminal-button terminal-button-secondary"
-                    :disabled="localLoginDisabled"
-                    @click="loginWithPassword"
-                  >
-                    {{ authStore.isLoading ? 'Signing in...' : 'Sign in locally' }}
-                  </button>
-                </div>
-
-                <article
-                  v-if="authStore.error"
-                  class="rounded-2xl border border-[rgba(255,125,125,0.35)] bg-[rgba(64,7,7,0.6)] px-4 py-3 text-sm text-[#ffd8d8]"
-                >
-                  {{ authStore.error }}
-                </article>
+            <article class="rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-5 text-sm text-[var(--muted)]">
+              <p>
+                Live SearxNG search is available without signing in.
+              </p>
+              <p class="mt-3">
+                Saving searches, inspecting stored results, and managing topics or source scopes still requires a Cloudflare-authenticated user.
+              </p>
+              <p v-if="authStore.error" class="mt-3 text-[#ffd8d8]">
+                {{ authStore.error }}
+              </p>
+              <div class="mt-4">
+                <button class="terminal-button terminal-button-secondary" @click="reloadAccessIdentity">
+                  Reload identity
+                </button>
               </div>
-            </div>
+            </article>
           </div>
         </section>
-      </template>
 
-      <template v-else>
         <section v-if="errorMessage" class="rounded-2xl border border-[rgba(255,125,125,0.35)] bg-[rgba(64,7,7,0.6)] px-4 py-3 text-sm text-[#ffd8d8]">
           {{ errorMessage }}
         </section>
@@ -1098,7 +1073,7 @@ onMounted(async () => {
         <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-3 sm:p-4">
           <div class="relative z-10 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <button
-              v-for="tab in workspaceTabs"
+              v-for="tab in visibleWorkspaceTabs"
               :key="tab.key"
               class="rounded-[1.2rem] border px-4 py-4 text-left transition-all"
               :class="
@@ -1116,7 +1091,7 @@ onMounted(async () => {
           </div>
         </section>
 
-      <template v-if="activeWorkspace === 'search'">
+      <template v-if="activeWorkspace === 'search' || !authStore.isAuthenticated">
         <section>
           <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
             <div class="relative z-10 space-y-5">
@@ -1130,7 +1105,7 @@ onMounted(async () => {
                   </button>
                   <button
                     class="terminal-button terminal-button-secondary"
-                    :disabled="!canSaveLiveSearch"
+                    :disabled="!canSaveLiveSearchAsTopic"
                     @click="openLiveSearchSaveDialog"
                   >
                     Save search
@@ -1159,6 +1134,13 @@ onMounted(async () => {
                   {{ isRunningLiveSearch ? 'Searching...' : 'Search now' }}
                 </button>
               </div>
+
+              <article
+                v-if="!authStore.isAuthenticated"
+                class="rounded-[1.3rem] border border-dashed border-[var(--line)] bg-black/20 p-4 text-sm text-[var(--muted)]"
+              >
+                Sign in through Cloudflare Access to save this live search as a tracked topic or attach it to source scopes.
+              </article>
 
               <div v-if="showAdvancedSearch" class="space-y-4 rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-4">
                 <div class="grid gap-3 lg:grid-cols-4">
@@ -1355,7 +1337,7 @@ onMounted(async () => {
         </section>
 
         <div
-          v-if="showLiveSearchSaveDialog"
+          v-if="showLiveSearchSaveDialog && authStore.isAuthenticated"
           class="fixed inset-0 z-50 flex items-center justify-center bg-black/72 px-4 py-6 backdrop-blur-sm"
           @click.self="closeLiveSearchSaveDialog"
         >
@@ -1472,7 +1454,10 @@ onMounted(async () => {
         </div>
       </template>
 
-      <section v-if="activeWorkspace === 'explore'" class="grid gap-5 xl:grid-cols-[0.92fr_1.48fr]">
+      <section
+        v-if="authStore.isAuthenticated && activeWorkspace === 'explore'"
+        class="grid gap-5 xl:grid-cols-[0.92fr_1.48fr]"
+      >
         <div class="space-y-5">
           <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
             <div class="relative z-10 space-y-4">
@@ -1635,7 +1620,10 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section v-else-if="activeWorkspace === 'configure'" class="grid gap-5 xl:grid-cols-[1.45fr_0.95fr]">
+      <section
+        v-else-if="authStore.isAuthenticated && activeWorkspace === 'configure'"
+        class="grid gap-5 xl:grid-cols-[1.45fr_0.95fr]"
+      >
         <div class="space-y-5">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -2062,7 +2050,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section v-else-if="activeWorkspace === 'runs'" class="space-y-5">
+      <section v-else-if="authStore.isAuthenticated && activeWorkspace === 'runs'" class="space-y-5">
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
             <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">Tracked topics</p>
@@ -2235,5 +2223,6 @@ onMounted(async () => {
       </section>
       </template>
     </main>
+
   </div>
 </template>

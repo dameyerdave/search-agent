@@ -3,11 +3,6 @@ from rest_framework import serializers
 from .models import SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
 
 
-# Fix for spectacular, used in settings.py - leave it here
-class SessionLoginTokenSerializer(serializers.Serializer):
-    key = serializers.CharField(read_only=True, required=False)
-
-
 def clean_string_list(value):
     if value is None:
         return []

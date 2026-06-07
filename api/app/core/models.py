@@ -15,6 +15,22 @@ class TimestampedModel(models.Model):
         abstract = True
 
 
+class CloudflareAccessIdentity(TimestampedModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="cloudflare_access_identities",
+    )
+    subject = models.CharField(max_length=255, unique=True)
+    email = models.EmailField(blank=True)
+
+    class Meta:
+        ordering = ["subject"]
+
+    def __str__(self):
+        return self.email or self.subject
+
+
 class SourceScope(TimestampedModel):
     class Kind(models.TextChoices):
         PUBLIC = "public", "Public"

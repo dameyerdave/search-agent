@@ -4,7 +4,7 @@ Based on `ETH-NEXUS/nexus-fullstack-example`, this project now uses SearxNG for 
 
 It is designed to:
 
-- authenticate users with local sessions plus optional Google, GitHub, or Microsoft OAuth
+- authenticate app requests with Cloudflare Access identity claims
 - track multiple topics, each with independent search criteria
 - let you run live ad hoc SearxNG searches before saving them as tracked topics
 - search configurable public, research, and custom source scopes via SearxNG
@@ -48,6 +48,7 @@ Services:
 
 - local SearxNG container
 - Crawl4AI running inside the API / worker image
+- optional Envoy edge proxy through the `proxy` compose profile
 - optional Cloudflare Tunnel connector through the `tunnel` compose profile
 
 ## Quick Start
@@ -58,6 +59,7 @@ docker compose up -d --build
 
 Services:
 
+- Envoy HTTP: `http://localhost`
 - Frontend: `http://localhost:8077`
 - API: `http://localhost:5077/api/v1/`
 - Admin: `http://localhost:8077/admin`
@@ -80,14 +82,14 @@ Key environment variables:
 - `SEARXNG_BASE_URL`
 - `SEARXNG_TIMEOUT_S`
 - `CRAWL4AI_MAX_PAGES_PER_RUN`
-- `SOCIAL_AUTH_PUBLIC_BASE_URL`
-- `SOCIAL_AUTH_GOOGLE_CLIENT_ID`
-- `SOCIAL_AUTH_GOOGLE_CLIENT_SECRET`
-- `SOCIAL_AUTH_GITHUB_CLIENT_ID`
-- `SOCIAL_AUTH_GITHUB_CLIENT_SECRET`
-- `SOCIAL_AUTH_MICROSOFT_CLIENT_ID`
-- `SOCIAL_AUTH_MICROSOFT_CLIENT_SECRET`
+- `CLOUDFLARE_ACCESS_TEAM_DOMAIN`
+- `CLOUDFLARE_ACCESS_AUDIENCE`
+- `ENVOY_HTTP_HOST_PORT`
 - `TUNNEL_TOKEN`
+
+## Envoy Proxy
+
+The optional `envoy` service listens for local HTTP traffic and routes `/api`, `/admin`, `/static`, and `/media` to Django while routing all other paths to Nuxt.
 
 ## Cloudflare Tunnel
 
@@ -96,27 +98,19 @@ Set `TUNNEL_TOKEN` in `.env` and include `tunnel` in `COMPOSE_PROFILES` to run i
 
 ## Authentication
 
-The UI now requires sign-in before loading the dashboard or saving searches.
+The UI and API now expect Cloudflare Access to sit in front of the app.
+After Access validates the browser, Django verifies the `Cf-Access-Jwt-Assertion` token, provisions or refreshes a matching user record, and scopes saved searches to that Cloudflare identity.
 
-Out of the box you still have local session login with the default admin user, and you can enable social login buttons by filling the matching env vars:
+Set these environment variables to match your Zero Trust application:
 
-- Google
-- GitHub
-- Microsoft
+- `CLOUDFLARE_ACCESS_TEAM_DOMAIN`
+- `CLOUDFLARE_ACCESS_AUDIENCE`
 
-The social login entrypoints are exposed through the UI proxy at:
-
-- `/api/v1/auth/social/google/login/`
-- `/api/v1/auth/social/github/login/`
-- `/api/v1/auth/social/microsoft/login/`
-
-For Google OAuth in local development, register this callback URL:
-
-- `http://localhost:8077/api/v1/auth/social/google/login/callback/`
+The Django admin remains available with the local admin account if you need direct admin access.
 
 ## Key API Endpoints
 
-- `GET /api/v1/auth/providers/`
+- `GET /api/v1/auth/user/`
 - `GET /api/v1/dashboard/`
 - `POST /api/v1/searxng/search/`
 - `GET/POST /api/v1/topics/`

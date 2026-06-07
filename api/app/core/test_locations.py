@@ -13,9 +13,10 @@ from .result_locations import (
     extract_location_candidates,
     refresh_result_locations,
 )
+from .test_helpers import CloudflareAccessTestMixin
 
 
-class OwnedTestCase(TestCase):
+class OwnedTestCase(CloudflareAccessTestMixin, TestCase):
     def setUp(self):
         super().setUp()
         cache.clear()
@@ -30,6 +31,7 @@ class OwnedTestCase(TestCase):
             email=f"other-{self.__class__.__name__.lower()}@example.com",
             password="secret123",
         )
+        self.set_cloudflare_identity(user=self.user)
 
     def create_topic(self, user, name="Topic"):
         return SearchTopic.objects.create(
@@ -181,7 +183,6 @@ class SearchResultMapApiTests(OwnedTestCase):
             ]
         )
 
-        self.client.force_login(self.user)
         response = self.client.get("/api/v1/results/map/")
 
         self.assertEqual(response.status_code, 200)

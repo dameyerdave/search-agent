@@ -1,12 +1,19 @@
 export type ApiErrorPayload = {
   error?: string
+  detail?: string
+  message?: string
 }
 
 const getDataError = (obj: Record<string, unknown>): string | null => {
   if (!('data' in obj) || !obj.data) return null
 
   const data = obj.data as ApiErrorPayload
-  return typeof data.error === 'string' ? data.error : null
+  return (
+    (typeof data.error === 'string' && data.error)
+    || (typeof data.detail === 'string' && data.detail)
+    || (typeof data.message === 'string' && data.message)
+    || null
+  )
 }
 
 const getResponseError = (obj: Record<string, unknown>): string | null => {
@@ -16,7 +23,12 @@ const getResponseError = (obj: Record<string, unknown>): string | null => {
   if (!('_data' in response) || !response._data) return null
 
   const data = response._data as ApiErrorPayload
-  return typeof data.error === 'string' ? data.error : null
+  return (
+    (typeof data.error === 'string' && data.error)
+    || (typeof data.detail === 'string' && data.detail)
+    || (typeof data.message === 'string' && data.message)
+    || null
+  )
 }
 
 const getMessageError = (obj: Record<string, unknown>): string | null => {

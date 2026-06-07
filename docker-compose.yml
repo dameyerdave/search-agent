@@ -1,6 +1,5 @@
 volumes:
   pg_data:
-  web_root:
   redis_data:
 services:
   searxng:
@@ -36,6 +35,26 @@ services:
     depends_on:
       api:
         condition: service_healthy
+  envoy:
+    profiles:
+      - proxy
+    image: ${ENVOY_IMAGE:-envoyproxy/envoy:v1.35-latest}
+    hostname: envoy
+    restart: unless-stopped
+    volumes:
+      - ./ops/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    ports:
+      - "${ENVOY_HTTP_HOST_PORT:-80}:80"
+    command:
+      - -c
+      - /etc/envoy/envoy.yaml
+      - --service-cluster
+      - search-agent
+    depends_on:
+      ui:
+        condition: service_started
+      api:
+        condition: service_healthy
   cloudflare-tunnel:
     profiles:
       - tunnel
@@ -47,48 +66,6 @@ services:
       - tunnel
       - --no-autoupdate
       - run
-  ui-build:
-    profiles:
-      - prod
-    build:
-      context: ui
-    volumes:
-      - ./ui/app:/app
-      - "web_root:/app/dist:z"
-    restart: "no"
-    command:
-      - /bin/sh
-      - -c
-      - |
-        mkdir -p /app/dist
-        set -e
-        pnpm install --frozen-lockfile
-        pnpm run build
-        cp -a /app/.output/public/. /app/dist/
-        rm -rf /app/.output
-
-  ws:
-    profiles:
-      - prod
-    image: ethnexus/smnrp:3.1.2
-    volumes:
-      - "web_root:/web_root:z"
-      - ./api/static:/vol/web/static:z
-      - ./api/media:/vol/web/media:z
-      # - /etc/pki/tls/certs/DCcerts2023/ldm.nexus.ethz.ch.chain.crt.pem:/etc/letsencrypt/live/ldm.nexus.ethz.ch/fullchain.pem:ro
-      # - /etc/pki/tls/private/key2023/ldm.nexus.ethz.ch.privkey.pem:/etc/letsencrypt/live/ldm.nexus.ethz.ch/privkey.pem:ro
-    ports:
-      - "${SMNRP_HTTP_HOST_PORT:-8088}:80"
-      - "${SMNRP_HTTPS_HOST_PORT:-443}:443"
-    env_file: .env
-    restart: unless-stopped
-    depends_on:
-      ui-build:
-        condition: service_completed_successfully
-      api:
-        condition: service_healthy
-      db:
-        condition: service_healthy
   api:
     build:
       context: api

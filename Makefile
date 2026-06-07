@@ -1,4 +1,4 @@
-.PHONY: help doctor up down build logs ps restart clean \
+.PHONY: help doctor up up-build down build logs ps restart clean \
         shell migrate makemigrations test createsuperuser \
         dbshell db-backup db-restore \
         lint format typecheck \
@@ -9,8 +9,8 @@ help:
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Docker:"
-	@echo "  up              Start app, API, Postgres, Redis, worker, and beat"
-	@echo "  up-prod         Start all services (prod profile)"
+	@echo "  up              Start services for active compose profiles"
+	@echo "  up-build        Build images and start services"
 	@echo "  down            Stop all services"
 	@echo "  build           Build all images"
 	@echo "  logs            Follow logs (all services)"
@@ -53,19 +53,19 @@ doctor:
 
 # Docker commands
 up:
-	docker compose --profile dev --profile celery up -d
+	docker compose up -d
 
-up-prod:
-	docker compose --profile prod up -d
+up-build:
+	docker compose up -d --build
 
 down:
-	docker compose --profile dev --profile prod --profile celery down
+	docker compose down
 
 build:
-	docker compose --profile dev --profile prod --profile celery build
+	docker compose build
 
 logs:
-	docker compose --profile dev --profile prod --profile celery logs -f
+	docker compose logs -f
 
 logs-api:
 	docker compose logs -f api
@@ -74,13 +74,13 @@ logs-ui:
 	docker compose logs -f ui
 
 ps:
-	docker compose --profile dev --profile prod --profile celery ps
+	docker compose ps
 
 restart:
-	docker compose --profile dev --profile prod --profile celery restart
+	docker compose restart
 
 clean:
-	docker compose --profile dev --profile prod --profile celery down -v
+	docker compose down -v
 
 # Django commands
 shell:

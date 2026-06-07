@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import (
+    CloudflareAccessIdentity,
     SearchProviderConfig,
     SearchResult,
     SearchResultLocation,
@@ -8,6 +9,12 @@ from .models import (
     SearchTopic,
     SourceScope,
 )
+
+
+@admin.register(CloudflareAccessIdentity)
+class CloudflareAccessIdentityAdmin(admin.ModelAdmin):
+    list_display = ("subject", "email", "user", "updated_at")
+    search_fields = ("subject", "email", "user__username", "user__email")
 
 
 @admin.register(SourceScope)

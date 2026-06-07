@@ -1,11 +1,9 @@
 from datetime import timedelta
 from unittest.mock import patch
-from urllib.parse import parse_qs, urlparse
 
 import httpx
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.test import override_settings
 from django.utils import timezone
 
 from .models import SearchProviderConfig, SearchResult, SearchTopic, SourceScope
@@ -21,6 +19,7 @@ from .services import (
     sort_search_items,
 )
 from .tasks import dispatch_due_topic_searches
+from .test_helpers import CloudflareAccessTestMixin
 
 
 class QueryBuilderTests(TestCase):
@@ -38,7 +37,7 @@ class QueryBuilderTests(TestCase):
         self.assertIn('-consulting', query)
 
 
-class OwnedTestCase(TestCase):
+class OwnedTestCase(CloudflareAccessTestMixin, TestCase):
     def setUp(self):
         super().setUp()
         User = get_user_model()
@@ -47,6 +46,7 @@ class OwnedTestCase(TestCase):
             email=f"{self.__class__.__name__.lower()}@example.com",
             password="secret123",
         )
+        self.set_cloudflare_identity(user=self.user)
 
 
 class ModelDefaultsTests(OwnedTestCase):
@@ -513,137 +513,3 @@ class DirectSearxNGSearchTests(OwnedTestCase):
         self.assertEqual(response["results"][0]["url"], "https://example.org/recovered")
         self.assertEqual(len(response["warnings"]), 1)
         self.assertEqual(response["request_count"], 2)
-
-
-class AuthAccessTests(OwnedTestCase):
-    def test_dashboard_requires_authentication(self):
-        response = self.client.get("/api/v1/dashboard/")
-
-        self.assertEqual(response.status_code, 403)
-
-    @override_settings(
-        SOCIAL_LOGIN_PROVIDERS=[
-            {
-                "id": "google",
-                "name": "Google",
-                "login_path": "/api/v1/auth/social/google/login/",
-            }
-        ],
-        SOCIAL_AUTH_PUBLIC_BASE_URL="",
-    )
-    def test_auth_providers_lists_configured_social_providers(self):
-        response = self.client.get("/api/v1/auth/providers/")
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json(),
-            {
-                "providers": [
-                    {
-                        "id": "google",
-                        "name": "Google",
-                        "login_path": "/api/v1/auth/social/google/login/",
-                        "login_url": "http://testserver/api/v1/auth/social/google/login/",
-                        "callback_url": "http://testserver/api/v1/auth/social/google/login/callback/",
-                    }
-                ]
-            },
-        )
-
-    @override_settings(
-        SOCIALACCOUNT_PROVIDERS={
-            "google": {
-                "APPS": [
-                    {
-                        "client_id": "google-client-id",
-                        "secret": "google-client-secret",
-                    }
-                ],
-                "SCOPE": ["profile", "email"],
-                "AUTH_PARAMS": {
-                    "access_type": "online",
-                    "prompt": "select_account",
-                },
-            }
-        },
-        SOCIAL_AUTH_PUBLIC_BASE_URL="https://localhost:8443",
-    )
-    def test_google_login_uses_configured_public_base_url_for_redirect_uri(self):
-        response = self.client.get(
-            "/api/v1/auth/social/google/login/?process=login",
-            HTTP_HOST="localhost:8077",
-        )
-
-        self.assertEqual(response.status_code, 302)
-        location = response["Location"]
-        params = parse_qs(urlparse(location).query)
-        self.assertEqual(
-            params["redirect_uri"][0],
-            "https://localhost:8443/api/v1/auth/social/google/login/callback/",
-        )
-
-    def test_dashboard_and_results_are_scoped_to_authenticated_user(self):
-        other_user = get_user_model().objects.create_user(
-            username="other-user",
-            email="other@example.com",
-            password="secret123",
-        )
-        source = SourceScope.objects.create(
-            owner=self.user,
-            name="My Research Scope",
-            kind=SourceScope.Kind.RESEARCH,
-        )
-        other_source = SourceScope.objects.create(
-            owner=other_user,
-            name="Other Research Scope",
-            kind=SourceScope.Kind.RESEARCH,
-        )
-        my_topic = SearchTopic.objects.create(
-            owner=self.user,
-            name="My Topic",
-            queries=["research data exchange"],
-        )
-        other_topic = SearchTopic.objects.create(
-            owner=other_user,
-            name="Other Topic",
-            queries=["data platform"],
-        )
-        my_topic.source_scopes.add(source)
-        other_topic.source_scopes.add(other_source)
-        SearchResult.objects.create(
-            topic=my_topic,
-            source_scope=source,
-            title="My Result",
-            url="https://example.org/my-result",
-            normalized_url="https://example.org/my-result",
-            domain="example.org",
-        )
-        SearchResult.objects.create(
-            topic=other_topic,
-            source_scope=other_source,
-            title="Other Result",
-            url="https://example.org/other-result",
-            normalized_url="https://example.org/other-result",
-            domain="example.org",
-        )
-
-        self.client.force_login(self.user)
-
-        dashboard_response = self.client.get("/api/v1/dashboard/")
-        results_response = self.client.get("/api/v1/results/")
-
-        self.assertEqual(dashboard_response.status_code, 200)
-        self.assertEqual(results_response.status_code, 200)
-        self.assertEqual(dashboard_response.json()["stats"]["topic_count"], 1)
-        self.assertEqual(
-            [topic["name"] for topic in dashboard_response.json()["topics"]],
-            ["My Topic"],
-        )
-        self.assertEqual(
-            [source_scope["name"] for source_scope in dashboard_response.json()["sources"]],
-            ["My Research Scope"],
-        )
-        self.assertEqual(
-            [result["title"] for result in results_response.json()["results"]],
-            ["My Result"],
-        )

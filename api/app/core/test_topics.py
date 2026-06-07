@@ -2,9 +2,10 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 
 from .models import SearchTopic, SourceScope
+from .test_helpers import CloudflareAccessTestMixin
 
 
-class SearchTopicApiTests(TestCase):
+class SearchTopicApiTests(CloudflareAccessTestMixin, TestCase):
     def setUp(self):
         super().setUp()
         user_model = get_user_model()
@@ -18,6 +19,7 @@ class SearchTopicApiTests(TestCase):
             email="topic-api-other-user@example.com",
             password="secret123",
         )
+        self.set_cloudflare_identity(user=self.user)
 
     def topic_payload(self, source_scope_ids):
         return {
@@ -42,7 +44,6 @@ class SearchTopicApiTests(TestCase):
             kind=SourceScope.Kind.CUSTOM,
         )
 
-        self.client.force_login(self.user)
         response = self.client.post(
             "/api/v1/topics/",
             self.topic_payload([source.id]),
@@ -60,7 +61,6 @@ class SearchTopicApiTests(TestCase):
             kind=SourceScope.Kind.CUSTOM,
         )
 
-        self.client.force_login(self.user)
         response = self.client.post(
             "/api/v1/topics/",
             self.topic_payload([source.id]),
