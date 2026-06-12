@@ -1,0 +1,6 @@
+apiVersion: v2
+name: search-agent
+description: Research Search Agent stack (Django API, Nuxt UI, SearxNG, Postgres, Redis, Celery, Envoy, Cloudflare Tunnel)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

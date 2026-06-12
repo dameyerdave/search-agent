@@ -1,0 +1,29 @@
+Search Agent has been deployed to namespace "{{ .Release.Namespace }}".
+
+Internal services (ClusterIP):
+  - envoy    : http://envoy.{{ .Release.Namespace }}.svc.cluster.local      (entrypoint: / -> ui, /api /admin /static /media -> api)
+  - ui       : http://ui.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.ui.port }}
+  - api      : http://api.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.config.DJANGO_PORT }}
+  - searxng  : http://searxng.{{ .Release.Namespace }}.svc.cluster.local:8080
+  - postgres : postgres.{{ .Release.Namespace }}.svc.cluster.local:5432
+  - redis    : redis.{{ .Release.Namespace }}.svc.cluster.local:6379
+
+{{- if .Values.cloudflared.enabled }}
+
+External access is via Cloudflare Tunnel (cloudflared connector is running).
+In the Cloudflare Zero Trust dashboard, make sure this tunnel's public
+hostname route points at:
+  http://envoy.{{ .Release.Namespace }}.svc.cluster.local:80
+{{- end }}
+
+Default admin login (configured via the DJANGO_SU_NAME config key and the
+DJANGO_SU_PASSWORD secret):
+  username: {{ .Values.config.DJANGO_SU_NAME }}
+
+Make sure the following secrets were supplied with --set-string (never
+commit real values to values.yaml):
+  - secrets.DJANGO_SECRET_KEY
+  - secrets.POSTGRES_PASSWORD
+  - secrets.DJANGO_SU_PASSWORD
+  - secrets.CLOUDFLARE_ACCESS_AUDIENCE
+  - secrets.TUNNEL_TOKEN

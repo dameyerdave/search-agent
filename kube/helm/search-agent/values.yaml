@@ -1,0 +1,129 @@
+# Default values for the search-agent chart.
+#
+# Secrets, image repository/tags, the SearxNG settings file and the Envoy
+# config file are expected to be supplied at deploy time, e.g.:
+#
+#   helm upgrade --install search-agent ./kube/helm/search-agent \
+#     --namespace search-agent --create-namespace \
+#     -f kube/helm/search-agent/values.yaml \
+#     -f kube/helm/search-agent/values-production.yaml \
+#     --set image.repository=<dockerhub-user> \
+#     --set image.api.tag=<git-sha> \
+#     --set image.ui.tag=<git-sha> \
+#     --set-string secrets.DJANGO_SECRET_KEY=*** \
+#     --set-string secrets.POSTGRES_PASSWORD=*** \
+#     --set-string secrets.DJANGO_SU_PASSWORD=*** \
+#     --set-string secrets.CLOUDFLARE_ACCESS_AUDIENCE=*** \
+#     --set-string secrets.TUNNEL_TOKEN=*** \
+#     --set-file searxng.settingsYaml=ops/searxng/settings.yml \
+#     --set-file envoy.configYaml=ops/envoy/envoy.yaml
+
+image:
+  registry: docker.io
+  repository: "" # Docker Hub username/org, e.g. "dameyerdave"
+  pullPolicy: IfNotPresent
+  api:
+    name: search-agent-api
+    tag: latest
+  ui:
+    name: search-agent-ui
+    tag: latest
+
+# Referenced by name on every workload. The deploy workflow creates this
+# secret with `kubectl create secret docker-registry`.
+imagePullSecrets:
+  - name: dockerhub-credentials
+
+# Non-secret environment variables shared by api, celery-worker, celery-beat
+# and ui. Mirrors .env.TEMPLATE. Service hostnames (postgres/redis/searxng/
+# api/ui) match the Kubernetes Service names below.
+config:
+  DJANGO_SETTINGS_MODULE: fsex.settings
+  DJANGO_DEBUG: "False"
+  DJANGO_LOG_LEVEL: INFO
+  DJANGO_LOG_SQL: "False"
+  DJANGO_PORT: "5000"
+  DJANGO_ALLOWED_HOSTS: "api,ui,localhost,127.0.0.1"
+  DJANGO_CSRF_TRUSTED_ORIGINS: "https://app.example.com"
+  DJANGO_CORS_ALLOWED_ORIGINS: "https://app.example.com"
+  DJANGO_SESSION_COOKIE_SAMESITE: Lax
+  DJANGO_SU_NAME: admin
+  DJANGO_SU_EMAIL: ""
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: search_agent
+  POSTGRES_USER: search_agent
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  SEARXNG_BASE_URL: "http://searxng:8080"
+  SEARXNG_PUBLIC_BASE_URL: "https://app.example.com/"
+  SEARXNG_TIMEOUT_S: "30"
+  CRAWL4AI_ENABLED: "True"
+  CRAWL4AI_HEADLESS: "True"
+  CRAWL4AI_MAX_PAGES_PER_RUN: "25"
+  CRAWL4AI_PRUNE_THRESHOLD: "0.4"
+  CRAWL4AI_WORD_COUNT_THRESHOLD: "20"
+  CLOUDFLARE_ACCESS_TEAM_DOMAIN: ""
+  CLOUDFLARE_ACCESS_APP_DOMAIN: ""
+  CLOUDFLARE_ACCESS_REDIRECT_URL: "/"
+  CLOUDFLARE_ACCESS_JWKS_CACHE_TTL_S: "300"
+  NUXT_PUBLIC_API_URL: ""
+  DBBACKUP_STORAGE_LOCATION: "/vol/backups/"
+  GIT_VERSION: ""
+  GIT_BRANCH: ""
+  GIT_LASTCOMMITDATE: ""
+
+# Secret environment variables. Populate with --set-string at deploy time -
+# never commit real values here.
+secrets:
+  DJANGO_SECRET_KEY: ""
+  POSTGRES_PASSWORD: ""
+  DJANGO_SU_PASSWORD: ""
+  CLOUDFLARE_ACCESS_AUDIENCE: ""
+  TUNNEL_TOKEN: ""
+
+postgres:
+  image: postgres:18-bookworm
+  storage: 5Gi
+  storageClassName: ""
+
+redis:
+  image: redis:8-alpine
+  storage: 1Gi
+  storageClassName: ""
+
+searxng:
+  image: searxng/searxng:latest
+  # Contents of ops/searxng/settings.yml, supplied via --set-file.
+  settingsYaml: ""
+
+api:
+  replicas: 1
+  resources: {}
+  media:
+    storage: 5Gi
+    storageClassName: ""
+  backups:
+    storage: 1Gi
+    storageClassName: ""
+
+celery:
+  worker:
+    replicas: 1
+    resources: {}
+  beat:
+    resources: {}
+
+ui:
+  replicas: 1
+  port: 8077
+  resources: {}
+
+envoy:
+  image: envoyproxy/envoy:v1.35-latest
+  # Contents of ops/envoy/envoy.yaml, supplied via --set-file.
+  configYaml: ""
+
+cloudflared:
+  enabled: true
+  image: cloudflare/cloudflared:latest

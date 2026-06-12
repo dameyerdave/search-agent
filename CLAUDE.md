@@ -100,3 +100,14 @@ Orval generates typed Vue Query composables and raw fetch functions from the Ope
 - **Generated output**: `ui/app/app/api/generated/` (gitignored, regenerate with `pnpm generate:api`)
 - **Custom fetch mutator**: `ui/app/app/api/mutator/custom-fetch.ts` — handles CSRF tokens and `credentials: 'include'`
 - **OpenAPI schema**: `ui/app/openapi/api/openapi.json` (auto-updated by `watch-openapi.mjs`)
+
+## Kubernetes Deployment (Helm)
+
+CI/CD builds `api`/`ui` images, pushes them to Docker Hub, and runs `helm upgrade --install` against the cluster.
+
+- **Chart**: `kube/helm/search-agent/` — one Deployment/StatefulSet per docker-compose service (api, ui, celery-worker, celery-beat, postgres, redis, searxng, envoy, cloudflared)
+- **Values**: `kube/helm/search-agent/values.yaml` — edit `config.*` (domains, allowed hosts) directly; `secrets.*` and image tags are supplied at deploy time, never committed
+- **Workflow**: `.github/workflows/deploy.yml` — required repo secrets are documented in its header comment
+- **Local kubeconfig**: `kube/kubeconfig.yaml` is gitignored — never commit cluster credentials; CI reads the cluster config from the `KUBE_CONFIG` secret (base64-encoded)
+- Service hostnames inside the cluster match the docker-compose hostnames (`api`, `ui`, `postgres`, `redis`, `searxng`, `envoy`), so `ops/envoy/envoy.yaml` and `ops/searxng/settings.yml` are reused unmodified via `--set-file`
+- External access is via Cloudflare Tunnel (`cloudflared`) routed to the in-cluster `envoy` service — update the tunnel's public hostname route in the Cloudflare Zero Trust dashboard to point at `http://envoy.search-agent.svc.cluster.local:80`

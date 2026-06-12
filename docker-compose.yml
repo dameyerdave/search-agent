@@ -18,6 +18,7 @@ services:
       - dev
     build:
       context: ui
+      target: base
     volumes:
       - ./ui/app:/app
     hostname: ui

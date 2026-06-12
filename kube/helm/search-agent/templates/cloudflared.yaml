@@ -1,0 +1,31 @@
+{{- if .Values.cloudflared.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  labels:
+    {{- include "search-agent.componentLabels" (dict "root" $ "component" "cloudflared") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "search-agent.selectorLabels" (dict "component" "cloudflared") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "search-agent.componentLabels" (dict "root" $ "component" "cloudflared") | nindent 8 }}
+    spec:
+      containers:
+        - name: cloudflared
+          image: {{ .Values.cloudflared.image }}
+          args:
+            - tunnel
+            - --no-autoupdate
+            - run
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: search-agent-secrets
+                  key: TUNNEL_TOKEN
+{{- end }}

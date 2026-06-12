@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-settings
+  labels:
+    {{- include "search-agent.componentLabels" (dict "root" $ "component" "searxng") | nindent 4 }}
+data:
+  settings.yml: |
+{{ .Values.searxng.settingsYaml | indent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searxng
+  labels:
+    {{- include "search-agent.componentLabels" (dict "root" $ "component" "searxng") | nindent 4 }}
+spec:
+  selector:
+    {{- include "search-agent.selectorLabels" (dict "component" "searxng") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searxng
+  labels:
+    {{- include "search-agent.componentLabels" (dict "root" $ "component" "searxng") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "search-agent.selectorLabels" (dict "component" "searxng") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "search-agent.componentLabels" (dict "root" $ "component" "searxng") | nindent 8 }}
+    spec:
+      containers:
+        - name: searxng
+          image: {{ .Values.searxng.image }}
+          env:
+            - name: BASE_URL
+              value: {{ .Values.config.SEARXNG_PUBLIC_BASE_URL | quote }}
+            - name: INSTANCE_NAME
+              value: "Research Search Agent"
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: settings
+              mountPath: /etc/searxng/settings.yml
+              subPath: settings.yml
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 6
+      volumes:
+        - name: settings
+          configMap:
+            name: searxng-settings

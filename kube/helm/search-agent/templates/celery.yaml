@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  labels:
+    {{- include "search-agent.componentLabels" (dict "root" $ "component" "celery-worker") | nindent 4 }}
+spec:
+  replicas: {{ .Values.celery.worker.replicas }}
+  selector:
+    matchLabels:
+      {{- include "search-agent.selectorLabels" (dict "component" "celery-worker") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "search-agent.componentLabels" (dict "root" $ "component" "celery-worker") | nindent 8 }}
+    spec:
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      containers:
+        - name: celery-worker
+          image: {{ include "search-agent.apiImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["celery", "-A", "fsex", "worker", "-l", "INFO"]
+          envFrom:
+            - configMapRef:
+                name: search-agent-config
+            - secretRef:
+                name: search-agent-secrets
+          volumeMounts:
+            - name: media
+              mountPath: /vol/web/media
+          {{- with .Values.celery.worker.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: api-media
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  labels:
+    {{- include "search-agent.componentLabels" (dict "root" $ "component" "celery-beat") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "search-agent.selectorLabels" (dict "component" "celery-beat") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "search-agent.componentLabels" (dict "root" $ "component" "celery-beat") | nindent 8 }}
+    spec:
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      containers:
+        - name: celery-beat
+          image: {{ include "search-agent.apiImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["celery", "-A", "fsex", "beat", "-l", "INFO"]
+          envFrom:
+            - configMapRef:
+                name: search-agent-config
+            - secretRef:
+                name: search-agent-secrets
+          {{- with .Values.celery.beat.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

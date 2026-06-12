@@ -183,3 +183,7 @@ logs/
 .DS_Store
 
 pythonenv
+
+# Kubernetes secrets / kubeconfig (never commit cluster credentials)
+kube/kubeconfig.yaml
+kube/*.kubeconfig

@@ -39,3 +39,7 @@ RUN crawl4ai-setup
 
 # Set working directory
 WORKDIR /app
+
+# Copy application source. In dev this is shadowed by the bind-mounted
+# ./api/app volume; in production images this is the code that runs.
+COPY ./app /app

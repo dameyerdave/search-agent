@@ -1,0 +1,143 @@
+# Builds the api/ui images, pushes them to Docker Hub, and deploys the full
+# stack to Kubernetes via the Helm chart in kube/helm/search-agent.
+#
+# Required repository secrets:
+#   DOCKERHUB_USERNAME          Docker Hub username/org images are pushed to
+#   DOCKERHUB_TOKEN              Docker Hub access token (read+write)
+#   KUBE_CONFIG                  base64 of a kubeconfig for the target cluster
+#                                 (cat kube/kubeconfig.yaml | base64 | tr -d '\n')
+#   DJANGO_SECRET_KEY             Django SECRET_KEY
+#   POSTGRES_PASSWORD             Postgres password for the search_agent user
+#   DJANGO_SU_PASSWORD             Password for the seeded Django admin user
+#   CLOUDFLARE_ACCESS_AUDIENCE    Cloudflare Access application audience tag
+#   TUNNEL_TOKEN                  Cloudflare Tunnel connector token
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: api
+          push: true
+          build-args: |
+            DCC_ENV=prod
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/search-agent-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/search-agent-api:${{ github.sha }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+
+  build-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ui
+          target: production
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/search-agent-ui:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/search-agent-ui:${{ github.sha }}
+          cache-from: type=gha,scope=ui
+          cache-to: type=gha,mode=max,scope=ui
+
+  deploy:
+    needs: [build-api, build-ui]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: latest
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: latest
+
+      - name: Ensure namespace exists
+        run: |
+          kubectl create namespace search-agent --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create Docker Hub image pull secret
+        run: |
+          kubectl create secret docker-registry dockerhub-credentials \
+            --docker-server=https://index.docker.io/v1/ \
+            --docker-username="${{ secrets.DOCKERHUB_USERNAME }}" \
+            --docker-password="${{ secrets.DOCKERHUB_TOKEN }}" \
+            --namespace search-agent \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy with Helm
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DJANGO_SU_PASSWORD: ${{ secrets.DJANGO_SU_PASSWORD }}
+          CLOUDFLARE_ACCESS_AUDIENCE: ${{ secrets.CLOUDFLARE_ACCESS_AUDIENCE }}
+          TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
+        run: |
+          cat > /tmp/secrets-values.yaml <<EOF
+          secrets:
+            DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY}"
+            POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+            DJANGO_SU_PASSWORD: "${DJANGO_SU_PASSWORD}"
+            CLOUDFLARE_ACCESS_AUDIENCE: "${CLOUDFLARE_ACCESS_AUDIENCE}"
+            TUNNEL_TOKEN: "${TUNNEL_TOKEN}"
+          EOF
+
+          helm upgrade --install search-agent ./kube/helm/search-agent \
+            --namespace search-agent \
+            --create-namespace \
+            -f /tmp/secrets-values.yaml \
+            --set image.repository="${DOCKERHUB_USERNAME}" \
+            --set image.api.tag="${{ github.sha }}" \
+            --set image.ui.tag="${{ github.sha }}" \
+            --set config.GIT_VERSION="${{ github.sha }}" \
+            --set config.GIT_BRANCH="${{ github.ref_name }}" \
+            --set-file searxng.settingsYaml=ops/searxng/settings.yml \
+            --set-file envoy.configYaml=ops/envoy/envoy.yaml \
+            --wait --timeout 10m
+
+          rm -f /tmp/secrets-values.yaml
