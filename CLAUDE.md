@@ -92,6 +92,13 @@ pnpm generate:api
 Session-based with CSRF (auto-handled by `app/api/mutator/custom-fetch.ts`).
 Endpoints: `/api/v1/auth/login/`, `/api/v1/auth/logout/`, `/api/v1/auth/user/`
 
+**Dev auto-login** - when `DJANGO_DEBUG=True` and `DEV_AUTO_LOGIN_EMAIL` is set (default
+`test@test.com` in `.env`/`.env.TEMPLATE`), every API request is authenticated as that
+user via `core.authentication.DevAutoLoginAuthentication` (prepended to
+`DEFAULT_AUTHENTICATION_CLASSES`). The user is created on first use as a superuser in the
+`editor` group. This lets local dev run without Cloudflare Access/Tunnel in front of the
+app - set `DEV_AUTO_LOGIN_EMAIL=` (empty) to require real Cloudflare Access tokens again.
+
 ## Orval (API Code Generation)
 
 Orval generates typed Vue Query composables and raw fetch functions from the OpenAPI schema.

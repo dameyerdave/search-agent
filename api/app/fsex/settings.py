@@ -44,6 +44,8 @@ CLOUDFLARE_ACCESS_JWKS_CACHE_TTL_S = env.int(
     "CLOUDFLARE_ACCESS_JWKS_CACHE_TTL_S",
     default=300,
 )
+# Dev-only auto-login, see core.authentication.DevAutoLoginAuthentication.
+DEV_AUTO_LOGIN_EMAIL = env.str("DEV_AUTO_LOGIN_EMAIL", default="").strip() if DEBUG else ""
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -194,6 +196,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
 }
+
+if DEV_AUTO_LOGIN_EMAIL:
+    REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"] = (
+        "core.authentication.DevAutoLoginAuthentication",
+    ) + REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"]
 
 # Use drf-spectacular for schema generation in DEBUG
 if DEBUG:

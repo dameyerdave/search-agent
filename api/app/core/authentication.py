@@ -5,6 +5,7 @@ import httpx
 import jwt
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.cache import cache
 from django.db import transaction
 from django.middleware.csrf import CsrfViewMiddleware
@@ -12,6 +13,7 @@ from django.utils.text import slugify
 from rest_framework import authentication, exceptions
 
 from .models import CloudflareAccessIdentity
+from .permissions import Groups
 
 
 class CloudflareAccessCsrfCheck(CsrfViewMiddleware):
@@ -278,3 +280,32 @@ class CloudflareAccessAuthentication(authentication.BaseAuthentication):
         reason = check.process_view(request, None, (), {})
         if reason:
             raise exceptions.PermissionDenied(f"CSRF Failed: {reason}")
+
+
+class DevAutoLoginAuthentication(authentication.BaseAuthentication):
+    """Authenticates every request as a fixed local user.
+
+    Only wired up via ``REST_FRAMEWORK`` when ``settings.DEV_AUTO_LOGIN_EMAIL``
+    is set, which settings.py restricts to ``DEBUG=True``. Lets the API be
+    used locally without a Cloudflare Access session in front of it.
+    """
+
+    def authenticate(self, request):
+        email = settings.DEV_AUTO_LOGIN_EMAIL
+        if not email:
+            return None
+
+        user_model = get_user_model()
+        user, created = user_model.objects.get_or_create(
+            email=email,
+            defaults={"username": email.partition("@")[0]},
+        )
+        if created:
+            user.is_staff = True
+            user.is_superuser = True
+            user.set_unusable_password()
+            user.save()
+            editor_group, _ = Group.objects.get_or_create(name=Groups.EDITOR)
+            user.groups.add(editor_group)
+
+        return (user, None)
