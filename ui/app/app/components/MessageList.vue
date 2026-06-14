@@ -127,11 +127,13 @@ const handleThinkingToggle = (messageId: string, values: string[]) => {
             <div class="text-muted whitespace-pre-wrap">{{ (item as { content: string }).content }}</div>
           </template>
         </UAccordion>
+        <!-- eslint-disable vue/no-v-html -- sanitized via DOMPurify in renderMarkdown -->
         <div
           v-if="message.role === 'assistant' && !isEmptyAssistant(message)"
           class="markdown-content prose prose-sm dark:prose-invert max-w-none"
           v-html="getRenderedContent(message)"
         ></div>
+        <!-- eslint-enable vue/no-v-html -->
         <div v-else-if="message.role === 'user'" class="whitespace-pre-wrap">
           {{ getTextFromMessage(message) }}
         </div>

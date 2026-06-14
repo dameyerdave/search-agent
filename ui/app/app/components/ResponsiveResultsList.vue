@@ -8,8 +8,7 @@ const props = defineProps<{
   formatDate: (value: string | null) => string
 }>()
 
-const previewText = (result: SearchResult) =>
-  result.snippet || result.content || t('results.no_preview')
+const previewText = (result: SearchResult) => result.snippet || result.content || t('results.no_preview')
 </script>
 
 <template>
@@ -22,16 +21,10 @@ const previewText = (result: SearchResult) =>
       >
         <div class="space-y-3">
           <div class="flex flex-wrap items-center gap-2">
-            <span
-              v-if="result.is_new"
-              class="pill bg-[var(--accent-soft)] text-[var(--accent)]"
-            >
+            <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
               {{ t('results.badges.new') }}
             </span>
-            <span
-              v-if="result.domain"
-              class="text-xs uppercase tracking-[0.18em] text-[var(--muted)]"
-            >
+            <span v-if="result.domain" class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
               {{ result.domain }}
             </span>
           </div>
@@ -51,13 +44,13 @@ const previewText = (result: SearchResult) =>
 
           <div class="grid gap-3 rounded-2xl border border-[var(--line)] bg-black/20 p-3">
             <div>
-              <p class="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('results.headers.topic') }}
               </p>
               <p class="mt-1 text-sm text-[var(--text)]">{{ result.topic_name }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('results.headers.scope') }}
               </p>
               <p class="mt-1 text-sm text-[var(--muted)]">
@@ -109,16 +102,10 @@ const previewText = (result: SearchResult) =>
             <td>
               <div class="space-y-2">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span
-                    v-if="result.is_new"
-                    class="pill bg-[var(--accent-soft)] text-[var(--accent)]"
-                  >
+                  <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
                     {{ t('results.badges.new') }}
                   </span>
-                  <span
-                    v-if="result.domain"
-                    class="text-xs uppercase tracking-[0.18em] text-[var(--muted)]"
-                  >
+                  <span v-if="result.domain" class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
                     {{ result.domain }}
                   </span>
                 </div>

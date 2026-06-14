@@ -60,12 +60,9 @@ export const useSearchAgentApi = () => {
     request,
     get: <T>(path: string, query?: Record<string, string | number | boolean | undefined>) =>
       request<T>(path, { method: 'GET', query }),
-    post: <T>(path: string, body?: Record<string, unknown>) =>
-      request<T>(path, { method: 'POST', body }),
-    patch: <T>(path: string, body?: Record<string, unknown>) =>
-      request<T>(path, { method: 'PATCH', body }),
-    put: <T>(path: string, body?: Record<string, unknown>) =>
-      request<T>(path, { method: 'PUT', body }),
+    post: <T>(path: string, body?: Record<string, unknown>) => request<T>(path, { method: 'POST', body }),
+    patch: <T>(path: string, body?: Record<string, unknown>) => request<T>(path, { method: 'PATCH', body }),
+    put: <T>(path: string, body?: Record<string, unknown>) => request<T>(path, { method: 'PUT', body }),
     delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   }
 }

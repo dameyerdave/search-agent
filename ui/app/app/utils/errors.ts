@@ -9,10 +9,10 @@ const getDataError = (obj: Record<string, unknown>): string | null => {
 
   const data = obj.data as ApiErrorPayload
   return (
-    (typeof data.error === 'string' && data.error)
-    || (typeof data.detail === 'string' && data.detail)
-    || (typeof data.message === 'string' && data.message)
-    || null
+    (typeof data.error === 'string' && data.error) ||
+    (typeof data.detail === 'string' && data.detail) ||
+    (typeof data.message === 'string' && data.message) ||
+    null
   )
 }
 
@@ -24,10 +24,10 @@ const getResponseError = (obj: Record<string, unknown>): string | null => {
 
   const data = response._data as ApiErrorPayload
   return (
-    (typeof data.error === 'string' && data.error)
-    || (typeof data.detail === 'string' && data.detail)
-    || (typeof data.message === 'string' && data.message)
-    || null
+    (typeof data.error === 'string' && data.error) ||
+    (typeof data.detail === 'string' && data.detail) ||
+    (typeof data.message === 'string' && data.message) ||
+    null
   )
 }
 

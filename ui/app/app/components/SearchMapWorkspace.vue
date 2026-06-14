@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
-import type {
-  SearchResultMapMarker,
-  SearchResultMapResponse,
-} from 'types/search-agent'
+import type { SearchResultMapMarker, SearchResultMapResponse } from 'types/search-agent'
 
 const props = defineProps<{
   topicSlug: string
@@ -100,9 +97,7 @@ const formatDate = (value: string | null) => {
   }
 }
 
-const mapEmptyLabel = computed(() =>
-  hasSelectedTopic.value ? t('map.empty_topic_map') : t('map.select_topic_prompt'),
-)
+const mapEmptyLabel = computed(() => (hasSelectedTopic.value ? t('map.empty_topic_map') : t('map.select_topic_prompt')))
 </script>
 
 <template>
@@ -111,14 +106,12 @@ const mapEmptyLabel = computed(() =>
       <div class="relative z-10 space-y-5">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">
+            <p class="mono-heading text-lg tracking-[0.22em] text-white uppercase">
               {{ t('map.title') }}
             </p>
             <p class="mt-2 text-sm text-[var(--muted)]">
               {{
-                hasSelectedTopic
-                  ? t('map.subtitle_topic', { topic: props.topicName })
-                  : t('map.select_topic_prompt')
+                hasSelectedTopic ? t('map.subtitle_topic', { topic: props.topicName }) : t('map.select_topic_prompt')
               }}
             </p>
           </div>
@@ -146,19 +139,19 @@ const mapEmptyLabel = computed(() =>
     <div class="space-y-5">
       <section class="grid gap-4 sm:grid-cols-3 2xl:grid-cols-1">
         <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
-          <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+          <p class="text-xs tracking-[0.28em] text-[var(--muted)] uppercase">
             {{ t('map.stats.results') }}
           </p>
           <p class="mt-3 text-4xl text-white">{{ mapStats.resultCount }}</p>
         </article>
         <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
-          <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+          <p class="text-xs tracking-[0.28em] text-[var(--muted)] uppercase">
             {{ t('map.stats.mapped') }}
           </p>
           <p class="mt-3 text-4xl text-white">{{ mapStats.mappedResultCount }}</p>
         </article>
         <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
-          <p class="text-xs uppercase tracking-[0.28em] text-[var(--muted)]">
+          <p class="text-xs tracking-[0.28em] text-[var(--muted)] uppercase">
             {{ t('map.stats.locations') }}
           </p>
           <p class="mt-3 text-4xl text-white">{{ mapStats.locationCount }}</p>
@@ -168,28 +161,21 @@ const mapEmptyLabel = computed(() =>
       <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
         <div class="relative z-10 space-y-4">
           <div>
-            <p class="mono-heading text-lg uppercase tracking-[0.22em] text-white">
+            <p class="mono-heading text-lg tracking-[0.22em] text-white uppercase">
               {{ selectedMarker ? selectedMarker.name : t('map.selection.title') }}
             </p>
             <p class="mt-2 text-sm text-[var(--muted)]">
-              {{
-                selectedMarker
-                  ? selectedMarker.display_name
-                  : t('map.selection.placeholder')
-              }}
+              {{ selectedMarker ? selectedMarker.display_name : t('map.selection.placeholder') }}
             </p>
           </div>
 
           <template v-if="selectedMarker">
             <div class="rounded-2xl border border-[var(--line)] bg-black/20 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-[var(--muted)]">
+              <p class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
                 {{ t('map.selection.related') }}
               </p>
               <p class="mt-3 text-3xl text-white">{{ selectedMarker.related_result_count }}</p>
-              <p
-                v-if="selectedMarker.remaining_result_count"
-                class="mt-2 text-sm text-[var(--muted)]"
-              >
+              <p v-if="selectedMarker.remaining_result_count" class="mt-2 text-sm text-[var(--muted)]">
                 {{ t('map.selection.more_results', { count: selectedMarker.remaining_result_count }) }}
               </p>
             </div>
@@ -204,7 +190,7 @@ const mapEmptyLabel = computed(() =>
                   <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
                     {{ t('map.results.new') }}
                   </span>
-                  <span class="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                  <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
                     {{ result.topic_name }}
                   </span>
                 </div>
@@ -226,10 +212,7 @@ const mapEmptyLabel = computed(() =>
             </div>
           </template>
 
-          <article
-            v-else
-            class="rounded-2xl border border-[var(--line)] bg-black/25 p-5 text-sm text-[var(--muted)]"
-          >
+          <article v-else class="rounded-2xl border border-[var(--line)] bg-black/25 p-5 text-sm text-[var(--muted)]">
             {{ t('map.selection.empty') }}
           </article>
         </div>

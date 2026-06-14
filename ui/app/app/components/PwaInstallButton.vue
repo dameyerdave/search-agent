@@ -49,9 +49,7 @@ const buttonIcon = computed(() => {
   return 'i-heroicons-arrow-down-tray'
 })
 
-const buttonLabel = computed(() =>
-  isInstalled.value ? t('pwa.button.installed') : t('pwa.button.install'),
-)
+const buttonLabel = computed(() => (isInstalled.value ? t('pwa.button.installed') : t('pwa.button.install')))
 
 const panelTitle = computed(() => {
   if (isInstalled.value) return t('pwa.panel.installed_title')
@@ -98,20 +96,18 @@ const instructionSteps = computed(() => {
 const syncInstalledState = () => {
   const navigatorWithStandalone = window.navigator as StandaloneNavigator
   isInstalled.value =
-    window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: fullscreen)').matches
-    || navigatorWithStandalone.standalone === true
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    navigatorWithStandalone.standalone === true
 }
 
 const syncPlatformState = () => {
   const userAgent = window.navigator.userAgent.toLowerCase()
   hasSecureInstallContext.value = window.isSecureContext
   isIos.value =
-    /iphone|ipad|ipod/.test(userAgent)
-    || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1)
-  isSafari.value =
-    /safari/.test(userAgent)
-    && !/chrome|crios|fxios|edgios|opr\//.test(userAgent)
+    /iphone|ipad|ipod/.test(userAgent) ||
+    (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1)
+  isSafari.value = /safari/.test(userAgent) && !/chrome|crios|fxios|edgios|opr\//.test(userAgent)
 }
 
 const registerServiceWorker = async () => {
@@ -205,11 +201,14 @@ onBeforeUnmount(() => {
       leave-from-class="translate-y-0 opacity-100"
       leave-to-class="translate-y-2 opacity-0"
     >
-      <div v-if="isPanelOpen" class="terminal-panel pwa-install-panel relative mb-3 overflow-hidden rounded-[1.45rem] p-4">
+      <div
+        v-if="isPanelOpen"
+        class="terminal-panel pwa-install-panel relative mb-3 overflow-hidden rounded-[1.45rem] p-4"
+      >
         <div class="relative z-10 space-y-4">
           <div class="flex items-start justify-between gap-3">
             <div class="space-y-2">
-              <p class="mono-heading text-sm uppercase tracking-[0.24em] text-white">
+              <p class="mono-heading text-sm tracking-[0.24em] text-white uppercase">
                 {{ panelTitle }}
               </p>
               <p class="text-sm leading-6 text-[var(--muted)]">
@@ -237,12 +236,7 @@ onBeforeUnmount(() => {
           </ol>
 
           <div class="flex flex-wrap gap-2">
-            <UButton
-              v-if="canUseNativePrompt"
-              size="sm"
-              icon="i-heroicons-arrow-down-tray"
-              @click="promptInstall"
-            >
+            <UButton v-if="canUseNativePrompt" size="sm" icon="i-heroicons-arrow-down-tray" @click="promptInstall">
               {{ t('pwa.panel.install_now') }}
             </UButton>
             <UButton size="sm" variant="ghost" @click="isPanelOpen = false">

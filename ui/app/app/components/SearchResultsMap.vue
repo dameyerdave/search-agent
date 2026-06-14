@@ -27,14 +27,12 @@ const center = reactive({
   lon: 0,
 })
 const zoom = ref(2)
-let dragState:
-  | {
-      x: number
-      y: number
-      centerX: number
-      centerY: number
-    }
-  | null = null
+let dragState: {
+  x: number
+  y: number
+  centerX: number
+  centerY: number
+} | null = null
 let wheelDelta = 0
 let lastWheelZoomAt = 0
 let wheelResetTimer: ReturnType<typeof setTimeout> | null = null
@@ -84,10 +82,7 @@ const fitToMarkers = () => {
   for (let nextZoom = MAX_ZOOM; nextZoom >= MIN_ZOOM; nextZoom -= 1) {
     const topLeft = project(maxLat, minLon, nextZoom)
     const bottomRight = project(minLat, maxLon, nextZoom)
-    if (
-      Math.abs(bottomRight.x - topLeft.x) <= safeWidth
-      && Math.abs(bottomRight.y - topLeft.y) <= safeHeight
-    ) {
+    if (Math.abs(bottomRight.x - topLeft.x) <= safeWidth && Math.abs(bottomRight.y - topLeft.y) <= safeHeight) {
       zoom.value = nextZoom
       return
     }
@@ -153,7 +148,10 @@ const positionedMarkers = computed(() => {
         size,
       }
     })
-    .filter((marker) => marker.left >= -80 && marker.left <= width.value + 80 && marker.top >= -80 && marker.top <= height.value + 80)
+    .filter(
+      (marker) =>
+        marker.left >= -80 && marker.left <= width.value + 80 && marker.top >= -80 && marker.top <= height.value + 80,
+    )
 })
 
 const zoomIn = (step = 1) => {
@@ -193,10 +191,7 @@ const onWheel = (event: WheelEvent) => {
   wheelDelta += nextDelta
   resetWheelDeltaSoon()
 
-  if (
-    Math.abs(wheelDelta) < WHEEL_ZOOM_THRESHOLD
-    || Date.now() - lastWheelZoomAt < WHEEL_ZOOM_COOLDOWN_MS
-  ) {
+  if (Math.abs(wheelDelta) < WHEEL_ZOOM_THRESHOLD || Date.now() - lastWheelZoomAt < WHEEL_ZOOM_COOLDOWN_MS) {
     return
   }
 
@@ -238,11 +233,7 @@ const moveDrag = (event: PointerEvent) => {
 
   const deltaX = event.clientX - dragState.x
   const deltaY = event.clientY - dragState.y
-  const nextCenter = unproject(
-    dragState.centerX - deltaX,
-    dragState.centerY - deltaY,
-    zoom.value,
-  )
+  const nextCenter = unproject(dragState.centerX - deltaX, dragState.centerY - deltaY, zoom.value)
   center.lat = nextCenter.lat
   center.lon = nextCenter.lon
 }
@@ -264,7 +255,7 @@ onUnmounted(() => {
 <template>
   <div
     ref="mapElement"
-    class="relative h-[420px] overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-[#08100a] touch-none"
+    class="relative h-[420px] touch-none overflow-hidden rounded-[1.5rem] border border-[var(--line)] bg-[#08100a]"
     @pointerdown="startDrag"
     @pointermove="moveDrag"
     @pointerup="stopDrag"
@@ -272,7 +263,9 @@ onUnmounted(() => {
     @pointerleave="stopDrag"
     @wheel.prevent="onWheel"
   >
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(93,255,153,0.16),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent_45%)]" />
+    <div
+      class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(93,255,153,0.16),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.04),transparent_45%)]"
+    />
 
     <img
       v-for="tile in tiles"
@@ -307,7 +300,7 @@ onUnmounted(() => {
       {{ marker.related_result_count }}
     </button>
 
-    <div class="absolute right-3 top-3 flex flex-col gap-2" @pointerdown.stop @wheel.stop>
+    <div class="absolute top-3 right-3 flex flex-col gap-2" @pointerdown.stop @wheel.stop>
       <button
         type="button"
         class="terminal-button terminal-button-secondary h-10 w-10 p-0 text-lg"
@@ -331,7 +324,9 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <div class="absolute bottom-3 left-3 rounded-full border border-[var(--line)] bg-black/55 px-3 py-1 text-[11px] text-[var(--muted)]">
+    <div
+      class="absolute bottom-3 left-3 rounded-full border border-[var(--line)] bg-black/55 px-3 py-1 text-[11px] text-[var(--muted)]"
+    >
       {{ t('map.tiles.attribution') }}
     </div>
 

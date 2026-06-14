@@ -60,6 +60,28 @@ pnpm generate:api
 
 **Pinia stores** - composition API style with `defineStore(() => {})`
 
+**Dashboard stores** - the `app.vue` SPA shell is split into 5 composition stores under
+`ui/app/app/stores/`, each owning state/actions for one workspace (or shared dashboard
+state). Leaf workspace stores may call `useDashboardStore()` at top-level setup for shared
+computed (e.g. `topics`); `dashboard.ts` calls into leaf stores from inside action bodies
+only (never at top-level setup) to avoid init-order cycles:
+```typescript
+// dashboard.ts action reaching into a leaf store
+const editTopicInConfigure = (topic: SearchTopic) => {
+  activeWorkspace.value = 'configure'
+  useConfigureWorkspaceStore().openTopicEditor(topic)
+}
+```
+- `stores/dashboard.ts` - shared dashboard payload (`topics`/`sources`/`provider`/`stats`),
+  `activeWorkspace`, `busyLabel`/`errorMessage`, `bootstrap()` (called from `app.vue`'s
+  `onMounted`), provider form, and cross-workspace topic actions
+- `stores/searchWorkspace.ts`, `stores/exploreWorkspace.ts`, `stores/configureWorkspace.ts`,
+  `stores/runsWorkspace.ts` - per-workspace form state/filters and actions
+- `app/utils/dashboard.ts` - pure formatting/derivation helpers (`formatDate`,
+  `summarizeStatus`, `describeCategories`, etc.) with **no i18n inside** - components
+  translate the returned discriminators via local helpers, e.g.
+  `t(\`dashboard.common.status.${summarizeStatus(status)}\`)`
+
 **UI** - use @nuxt/ui components: `UButton`, `UCard`, `UBadge`, `UInput`, etc.
 
 **i18n** - use `const { t } = useI18n()` for all user-facing strings
