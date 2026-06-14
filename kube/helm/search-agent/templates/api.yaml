@@ -20,6 +20,8 @@ metadata:
     {{- include "search-agent.componentLabels" (dict "root" $ "component" "api") | nindent 4 }}
 spec:
   replicas: {{ .Values.api.replicas }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "search-agent.selectorLabels" (dict "component" "api") | nindent 6 }}

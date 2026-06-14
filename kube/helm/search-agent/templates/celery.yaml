@@ -6,6 +6,8 @@ metadata:
     {{- include "search-agent.componentLabels" (dict "root" $ "component" "celery-worker") | nindent 4 }}
 spec:
   replicas: {{ .Values.celery.worker.replicas }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "search-agent.selectorLabels" (dict "component" "celery-worker") | nindent 6 }}
