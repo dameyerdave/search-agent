@@ -33,6 +33,13 @@ spec:
       enableServiceLinks: false
       securityContext:
         fsGroup: 999
+      initContainers:
+        - name: fix-data-permissions
+          image: {{ .Values.redis.image }}
+          command: ["chown", "-R", "999:999", "/data"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
       containers:
         - name: redis
           image: {{ .Values.redis.image }}
