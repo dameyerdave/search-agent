@@ -1,6 +1,6 @@
 import { getErrorMessage } from 'errors'
 import type { SearchTopic, SourceScope } from 'types/search-agent'
-import { joinLines, normalizeLanguageCode, splitLines } from 'utils/dashboard'
+import { joinLines, normalizeLanguageCodes, splitLines } from 'utils/dashboard'
 
 export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore', () => {
   const api = useSearchAgentApi()
@@ -32,7 +32,7 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
     useAllCategories: true,
     useAllEngines: true,
     searxngEngines: [] as string[],
-    language: '',
+    languages: [] as string[],
     safeSearch: '0',
     timeRange: 'auto',
     resultOrder: 'relevance' as 'relevance' | 'newest',
@@ -105,7 +105,7 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
       useAllCategories: source.use_all_categories,
       useAllEngines: source.use_all_engines,
       searxngEngines: [...source.searxng_engines],
-      language: normalizeLanguageCode(source.language, dashboardStore.availableLanguages),
+      languages: normalizeLanguageCodes(source.languages, dashboardStore.availableLanguages),
       safeSearch: String(source.safe_search),
       timeRange: source.time_range,
       resultOrder: source.result_order,
@@ -138,6 +138,14 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
 
   const clearSourceEngines = () => {
     sourceForm.searxngEngines = []
+  }
+
+  const selectAllSourceLanguages = () => {
+    sourceForm.languages = dashboardStore.availableLanguages.map((language) => language.code)
+  }
+
+  const clearSourceLanguages = () => {
+    sourceForm.languages = []
   }
 
   const saveTopic = async () => {
@@ -192,7 +200,7 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
       use_all_categories: sourceForm.useAllCategories,
       use_all_engines: sourceForm.useAllEngines,
       searxng_engines: sourceForm.useAllEngines ? [] : sourceForm.searxngEngines,
-      language: normalizeLanguageCode(sourceForm.language, dashboardStore.availableLanguages),
+      languages: normalizeLanguageCodes(sourceForm.languages, dashboardStore.availableLanguages),
       safe_search: Number(sourceForm.safeSearch),
       time_range: sourceForm.timeRange,
       result_order: sourceForm.resultOrder,
@@ -252,6 +260,8 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
     clearSourceCategories,
     selectAllSourceEngines,
     clearSourceEngines,
+    selectAllSourceLanguages,
+    clearSourceLanguages,
     saveTopic,
     saveSource,
     deleteSource,

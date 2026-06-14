@@ -37,6 +37,11 @@ class SourceScopeSerializer(serializers.ModelSerializer):
         allow_empty=True,
         required=False,
     )
+    languages = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=True,
+        required=False,
+    )
 
     class Meta:
         model = SourceScope
@@ -50,7 +55,7 @@ class SourceScopeSerializer(serializers.ModelSerializer):
             "use_all_categories",
             "use_all_engines",
             "searxng_engines",
-            "language",
+            "languages",
             "safe_search",
             "time_range",
             "result_order",
@@ -84,19 +89,19 @@ class SourceScopeSerializer(serializers.ModelSerializer):
     def validate_exclude_domains(self, value):
         return clean_string_list(value)
 
-    def validate_language(self, value):
-        from .services import load_searxng_locales, normalize_searxng_language
+    def validate_languages(self, value):
+        from .services import load_searxng_locales, normalize_searxng_languages
 
-        language = normalize_searxng_language(value)
-        if not language:
-            return ""
+        languages = normalize_searxng_languages(value)
 
         locales = load_searxng_locales()
-        if locales and language not in locales:
-            raise serializers.ValidationError(
-                "Choose one of the available SearxNG languages or leave this blank."
-            )
-        return language
+        if locales:
+            invalid = [language for language in languages if language not in locales]
+            if invalid:
+                raise serializers.ValidationError(
+                    "Choose languages from the available SearxNG language list."
+                )
+        return languages
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -273,7 +278,11 @@ class SearxNGSearchRequestSerializer(serializers.Serializer):
         allow_empty=True,
         required=False,
     )
-    language = serializers.CharField(required=False, allow_blank=True)
+    languages = serializers.ListField(
+        child=serializers.CharField(),
+        allow_empty=True,
+        required=False,
+    )
     safesearch = serializers.IntegerField(required=False, min_value=0, max_value=2)
     time_range = serializers.CharField(required=False, allow_blank=True)
     result_order = serializers.ChoiceField(
@@ -323,19 +332,19 @@ class SearxNGSearchRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("Use day, month, year, or leave blank.")
         return value
 
-    def validate_language(self, value):
-        from .services import load_searxng_locales, normalize_searxng_language
+    def validate_languages(self, value):
+        from .services import load_searxng_locales, normalize_searxng_languages
 
-        language = normalize_searxng_language(value)
-        if not language:
-            return ""
+        languages = normalize_searxng_languages(value)
 
         locales = load_searxng_locales()
-        if locales and language not in locales:
-            raise serializers.ValidationError(
-                "Choose one of the available SearxNG languages or leave this blank."
-            )
-        return language
+        if locales:
+            invalid = [language for language in languages if language not in locales]
+            if invalid:
+                raise serializers.ValidationError(
+                    "Choose languages from the available SearxNG language list."
+                )
+        return languages
 
     def validate_extra_params(self, value):
         if value in (None, ""):

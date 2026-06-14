@@ -49,6 +49,11 @@ export const describeEngines = (source: SourceScope): CoverageDescription => {
   return { kind: 'none', values: [] }
 }
 
+export const describeLanguages = (source: SourceScope): CoverageDescription => {
+  if (source.languages.length) return { kind: 'list', values: source.languages }
+  return { kind: 'all', values: [] }
+}
+
 export const describeResultOrder = (source: SourceScope): 'newest' | 'relevance' =>
   source.result_order === 'newest' ? 'newest' : 'relevance'
 
@@ -135,7 +140,7 @@ export const sortLiveSearchResults = (
   return [...results].sort((left, right) => resolveScore(right.score) - resolveScore(left.score))
 }
 
-export const normalizeLanguageCode = (value: string, availableLanguages: LanguageOption[]): string => {
+const normalizeLanguageCode = (value: string, availableLanguages: LanguageOption[]): string => {
   const trimmed = value.trim()
   if (!trimmed) {
     return ''
@@ -159,4 +164,19 @@ export const normalizeLanguageCode = (value: string, availableLanguages: Languag
   }
 
   return trimmed
+}
+
+export const normalizeLanguageCodes = (values: string[], availableLanguages: LanguageOption[]): string[] => {
+  const codes: string[] = []
+  const seen = new Set<string>()
+
+  for (const value of values) {
+    const normalized = normalizeLanguageCode(value, availableLanguages)
+    if (normalized && !seen.has(normalized)) {
+      seen.add(normalized)
+      codes.push(normalized)
+    }
+  }
+
+  return codes
 }

@@ -5,22 +5,12 @@ const { t } = useI18n()
 
 const categoriesHintId = 'live-search-categories-hint'
 const enginesHintId = 'live-search-engines-hint'
+const languagesHintId = 'live-search-languages-hint'
 </script>
 
 <template>
   <div id="search-advanced-panel" class="space-y-4 rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-4">
-    <div class="grid gap-3 lg:grid-cols-4">
-      <label class="space-y-2">
-        <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-          {{ t('dashboard.search.advanced.language') }}
-        </span>
-        <select v-model="searchStore.liveSearchForm.language" class="terminal-select">
-          <option value="">{{ t('dashboard.search.advanced.all_languages') }}</option>
-          <option v-for="language in dashboardStore.availableLanguages" :key="language.code" :value="language.code">
-            {{ language.label }} ({{ language.code }})
-          </option>
-        </select>
-      </label>
+    <div class="grid gap-3 lg:grid-cols-3">
       <label class="space-y-2">
         <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
           {{ t('dashboard.search.advanced.safe_search') }}
@@ -102,6 +92,48 @@ const enginesHintId = 'live-search-engines-hint'
           placeholder="theme=simple&#10;enabled_plugins=Hash_plugin,Tracker_URL_remover&#10;disabled_plugins=Open_Access_DOI_rewrite"
         />
       </label>
+    </div>
+
+    <div class="space-y-3 rounded-[1.3rem] border border-[var(--line)] bg-black/20 p-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+          {{ t('dashboard.search.advanced.selected_languages') }}
+          <span class="text-[var(--text)]">{{ searchStore.liveSearchForm.languages.length }}</span> /
+          {{ dashboardStore.availableLanguages.length || '0' }}
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            class="terminal-button terminal-button-secondary"
+            @click="searchStore.selectAllLiveSearchLanguages"
+          >
+            {{ t('dashboard.common.buttons.select_all') }}
+          </button>
+          <button
+            type="button"
+            class="terminal-button terminal-button-secondary"
+            @click="searchStore.clearLiveSearchLanguages"
+          >
+            {{ t('dashboard.common.buttons.clear') }}
+          </button>
+        </div>
+      </div>
+      <template v-if="dashboardStore.availableLanguages.length">
+        <p :id="languagesHintId" class="text-xs text-[var(--muted)]">
+          {{ t('dashboard.search.advanced.multi_select_hint') }}
+        </p>
+        <select
+          v-model="searchStore.liveSearchForm.languages"
+          class="terminal-select min-h-[220px]"
+          multiple
+          :aria-describedby="languagesHintId"
+        >
+          <option v-for="language in dashboardStore.availableLanguages" :key="language.code" :value="language.code">
+            {{ language.label }} ({{ language.code }})
+          </option>
+        </select>
+      </template>
+      <p v-else class="text-sm text-[var(--muted)]">{{ t('dashboard.search.advanced.no_languages') }}</p>
     </div>
 
     <div

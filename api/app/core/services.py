@@ -358,6 +358,17 @@ def normalize_searxng_language(value: str | None) -> str:
     return text
 
 
+def normalize_searxng_languages(values) -> list[str]:
+    languages = []
+    seen = set()
+    for value in clean_string_list(values):
+        normalized = normalize_searxng_language(value)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            languages.append(normalized)
+    return languages
+
+
 def resolve_searxng_categories(values, use_all_categories: bool) -> list[str]:
     if use_all_categories:
         return load_searxng_categories()
@@ -390,6 +401,26 @@ def split_searxng_category_batches(params: dict) -> list[dict]:
     return batches
 
 
+def split_searxng_batches(params: dict) -> list[list[dict]]:
+    """Split into groups of batches, one group per category batch.
+
+    All batches within a group (one per selected language) are executed
+    before the result-count early-stop is checked, so every selected
+    language gets a chance to contribute results for a given category batch.
+    """
+    languages = params.get("languages") or []
+    base_params = {key: value for key, value in params.items() if key != "languages"}
+    category_batches = split_searxng_category_batches(base_params)
+
+    if not languages:
+        return [[batch] for batch in category_batches]
+
+    return [
+        [{**category_batch, "language": language} for language in languages]
+        for category_batch in category_batches
+    ]
+
+
 def merge_searxng_responses(
     client: SearxNGClient,
     params: dict,
@@ -410,50 +441,52 @@ def merge_searxng_responses(
     executed_params = []
     attempted_request_count = 0
     number_of_results = None
-    batches = split_searxng_category_batches(params)
+    groups = split_searxng_batches(params)
+    total_batches = sum(len(group) for group in groups)
 
-    for batch_params in batches:
-        executed_params.append(dict(batch_params))
-        attempted_request_count += 1
-        try:
-            response = client.search(batch_params, timeout_s=batch_timeout_s)
-        except httpx.HTTPError as exc:
-            warnings.append(
-                {
-                    "params": dict(batch_params),
-                    "error": str(exc),
-                }
+    for group in groups:
+        for batch_params in group:
+            executed_params.append(dict(batch_params))
+            attempted_request_count += 1
+            try:
+                response = client.search(batch_params, timeout_s=batch_timeout_s)
+            except httpx.HTTPError as exc:
+                warnings.append(
+                    {
+                        "params": dict(batch_params),
+                        "error": str(exc),
+                    }
+                )
+                continue
+
+            if total_batches == 1:
+                number_of_results = response.get("number_of_results")
+
+            suggestions.extend(clean_string_list(response.get("suggestions") or []))
+            answers.extend(clean_string_list(response.get("answers") or []))
+            corrections.extend(clean_string_list(response.get("corrections") or []))
+            infoboxes.extend(response.get("infoboxes") or [])
+            unresponsive_engines.extend(
+                clean_string_list(response.get("unresponsive_engines") or [])
             )
-            continue
 
-        if len(batches) == 1:
-            number_of_results = response.get("number_of_results")
+            for item in response.get("results", []):
+                url = str(item.get("url") or "").strip()
+                if not url:
+                    continue
 
-        suggestions.extend(clean_string_list(response.get("suggestions") or []))
-        answers.extend(clean_string_list(response.get("answers") or []))
-        corrections.extend(clean_string_list(response.get("corrections") or []))
-        infoboxes.extend(response.get("infoboxes") or [])
-        unresponsive_engines.extend(
-            clean_string_list(response.get("unresponsive_engines") or [])
-        )
+                normalized = normalize_url(url)
+                if normalized in seen_urls:
+                    continue
 
-        for item in response.get("results", []):
-            url = str(item.get("url") or "").strip()
-            if not url:
-                continue
+                domain = extract_domain(url)
+                if not domain_allowed(domain, include_domains or [], exclude_domains or []):
+                    continue
 
-            normalized = normalize_url(url)
-            if normalized in seen_urls:
-                continue
-
-            domain = extract_domain(url)
-            if not domain_allowed(domain, include_domains or [], exclude_domains or []):
-                continue
-
-            seen_urls.add(normalized)
-            results.append(item)
-            if max_results and len(results) >= max_results:
-                break
+                seen_urls.add(normalized)
+                results.append(item)
+                if max_results and len(results) >= max_results:
+                    break
 
         if max_results and len(results) >= max_results:
             break
@@ -579,9 +612,9 @@ def build_searxng_params(topic: SearchTopic, source_scope: SourceScope, query: s
         params["categories"] = ",".join(categories)
     if not getattr(source_scope, "use_all_engines", True) and engines:
         params["engines"] = ",".join(engines)
-    language = normalize_searxng_language(source_scope.language)
-    if language:
-        params["language"] = language
+    languages = normalize_searxng_languages(source_scope.languages)
+    if languages:
+        params["languages"] = languages
     time_range = resolve_time_range(topic.lookback_days, source_scope)
     if time_range:
         params["time_range"] = time_range
@@ -618,9 +651,9 @@ def build_direct_searxng_params(payload: dict) -> dict:
         params["categories"] = ",".join(categories)
     if not use_all_engines and engines:
         params["engines"] = ",".join(engines)
-    language = normalize_searxng_language(payload.get("language"))
-    if language:
-        params["language"] = language
+    languages = normalize_searxng_languages(payload.get("languages"))
+    if languages:
+        params["languages"] = languages
     if payload.get("time_range"):
         params["time_range"] = payload["time_range"]
 

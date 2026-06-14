@@ -13,7 +13,7 @@ export interface SourceScope {
   use_all_categories: boolean
   use_all_engines: boolean
   searxng_engines: string[]
-  language: string
+  languages: string[]
   safe_search: number
   time_range: 'auto' | 'any' | 'day' | 'month' | 'year'
   result_order: 'relevance' | 'newest'

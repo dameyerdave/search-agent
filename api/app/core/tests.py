@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import httpx
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from .models import SearchProviderConfig, SearchResult, SearchTopic, SourceScope
@@ -264,12 +264,12 @@ class DirectSearxNGSearchTests(OwnedTestCase):
             owner=self.user,
             name="Language Scope",
             kind=SourceScope.Kind.PUBLIC,
-            language="en-US",
+            languages=["en-US"],
         )
 
         params = build_searxng_params(topic, source, '"research data exchange"')
 
-        self.assertEqual(params["language"], "en")
+        self.assertEqual(params["languages"], ["en"])
 
     def test_build_direct_searxng_params_omits_engines_when_using_all_engines(self):
         params = build_direct_searxng_params(
@@ -328,11 +328,11 @@ class DirectSearxNGSearchTests(OwnedTestCase):
         params = build_direct_searxng_params(
             {
                 "q": '"research data exchange format"',
-                "language": "en-US",
+                "languages": ["en-US"],
             }
         )
 
-        self.assertEqual(params["language"], "en")
+        self.assertEqual(params["languages"], ["en"])
 
     @patch(
         "core.services.load_searxng_locales",
@@ -392,7 +392,7 @@ class DirectSearxNGSearchTests(OwnedTestCase):
             "categories": ["general", "science"],
             "use_all_engines": False,
             "engines": ["google", "arxiv"],
-            "language": "en-US",
+            "languages": ["en-US"],
             "safesearch": 0,
             "time_range": "month",
             "result_order": "newest",

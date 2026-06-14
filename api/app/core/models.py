@@ -65,7 +65,7 @@ class SourceScope(TimestampedModel):
     use_all_categories = models.BooleanField(default=True)
     use_all_engines = models.BooleanField(default=True)
     searxng_engines = models.JSONField(default=list, blank=True)
-    language = models.CharField(max_length=32, blank=True)
+    languages = models.JSONField(default=list, blank=True)
     safe_search = models.PositiveSmallIntegerField(
         default=0,
         validators=[MinValueValidator(0), MaxValueValidator(2)],

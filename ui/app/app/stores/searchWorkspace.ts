@@ -3,7 +3,7 @@ import type { LiveSearxResponse, SearchTopic, SourceScope } from 'types/search-a
 import {
   cleanSearchLabel,
   deriveLookbackDays,
-  normalizeLanguageCode,
+  normalizeLanguageCodes,
   parseExtraParams,
   sortLiveSearchResults,
   splitTokens,
@@ -24,7 +24,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
     useAllCategories: true,
     useAllEngines: true,
     engines: [] as string[],
-    language: '',
+    languages: [] as string[],
     safeSearch: '0',
     timeRange: '',
     resultOrder: 'relevance' as 'relevance' | 'newest',
@@ -137,6 +137,14 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
     liveSearchForm.engines = []
   }
 
+  const selectAllLiveSearchLanguages = () => {
+    liveSearchForm.languages = dashboardStore.availableLanguages.map((language) => language.code)
+  }
+
+  const clearLiveSearchLanguages = () => {
+    liveSearchForm.languages = []
+  }
+
   const runLiveSearch = async (append = false) => {
     const query = liveSearchForm.q.trim()
     if (!query) {
@@ -159,7 +167,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
         use_all_categories: liveSearchForm.useAllCategories,
         use_all_engines: liveSearchForm.useAllEngines,
         engines: liveSearchForm.useAllEngines ? [] : liveSearchForm.engines,
-        language: normalizeLanguageCode(liveSearchForm.language, dashboardStore.availableLanguages),
+        languages: normalizeLanguageCodes(liveSearchForm.languages, dashboardStore.availableLanguages),
         safesearch: Number(liveSearchForm.safeSearch),
         time_range: liveSearchForm.timeRange,
         result_order: liveSearchForm.resultOrder,
@@ -228,7 +236,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
           use_all_categories: liveSearchForm.useAllCategories,
           use_all_engines: liveSearchForm.useAllEngines,
           searxng_engines: liveSearchForm.useAllEngines ? [] : liveSearchForm.engines,
-          language: normalizeLanguageCode(liveSearchForm.language, dashboardStore.availableLanguages),
+          languages: normalizeLanguageCodes(liveSearchForm.languages, dashboardStore.availableLanguages),
           safe_search: Number(liveSearchForm.safeSearch),
           time_range: liveSearchForm.timeRange || 'any',
           result_order: liveSearchForm.resultOrder,
@@ -310,5 +318,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
     clearLiveSearchCategories,
     selectAllLiveSearchEngines,
     clearLiveSearchEngines,
+    selectAllLiveSearchLanguages,
+    clearLiveSearchLanguages,
   }
 })

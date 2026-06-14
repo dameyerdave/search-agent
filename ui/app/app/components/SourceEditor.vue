@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { describeCategories, describeEngines, describeResultOrder } from 'utils/dashboard'
+import { describeCategories, describeEngines, describeLanguages, describeResultOrder } from 'utils/dashboard'
 import type { SourceScope } from 'types/search-agent'
 
 const dashboardStore = useDashboardStore()
@@ -8,6 +8,7 @@ const { t } = useI18n()
 
 const categoriesHintId = 'configure-source-categories-hint'
 const enginesHintId = 'configure-source-engines-hint'
+const languagesHintId = 'configure-source-languages-hint'
 
 const kindLabel = (kind: SourceScope['kind']) => {
   if (kind === 'research') return t('dashboard.explore.results_terminal.kind_research')
@@ -26,6 +27,12 @@ const engineLabel = (source: SourceScope) => {
   const coverage = describeEngines(source)
   if (coverage.kind === 'all') return t('dashboard.configure.source_editor.engines_all')
   if (coverage.kind === 'none') return t('dashboard.configure.source_editor.engines_none')
+  return coverage.values.join(', ')
+}
+
+const languageLabel = (source: SourceScope) => {
+  const coverage = describeLanguages(source)
+  if (coverage.kind === 'all') return t('dashboard.search.advanced.all_languages')
   return coverage.values.join(', ')
 }
 
@@ -76,17 +83,6 @@ const resultOrderLabel = (source: SourceScope) =>
             <option value="public">{{ t('dashboard.explore.results_terminal.kind_public') }}</option>
             <option value="research">{{ t('dashboard.explore.results_terminal.kind_research') }}</option>
             <option value="custom">{{ t('dashboard.explore.results_terminal.kind_custom') }}</option>
-          </select>
-        </label>
-        <label class="space-y-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.search.advanced.language') }}
-          </span>
-          <select v-model="configureStore.sourceForm.language" class="terminal-select">
-            <option value="">{{ t('dashboard.configure.source_editor.any_language') }}</option>
-            <option v-for="language in dashboardStore.availableLanguages" :key="language.code" :value="language.code">
-              {{ language.label }} ({{ language.code }})
-            </option>
           </select>
         </label>
         <label class="space-y-2">
@@ -255,6 +251,51 @@ const resultOrderLabel = (source: SourceScope) =>
           </template>
           <p v-else class="text-sm text-[var(--muted)]">{{ t('dashboard.search.advanced.no_engines') }}</p>
         </div>
+        <div class="space-y-3 rounded-[1.3rem] border border-[var(--line)] bg-black/20 p-4 sm:col-span-2">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+              {{ t('dashboard.search.advanced.selected_languages') }}
+              <span class="text-[var(--text)]">{{ configureStore.sourceForm.languages.length }}</span> /
+              {{ dashboardStore.availableLanguages.length || '0' }}
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="terminal-button terminal-button-secondary"
+                @click="configureStore.selectAllSourceLanguages"
+              >
+                {{ t('dashboard.common.buttons.select_all') }}
+              </button>
+              <button
+                type="button"
+                class="terminal-button terminal-button-secondary"
+                @click="configureStore.clearSourceLanguages"
+              >
+                {{ t('dashboard.common.buttons.clear') }}
+              </button>
+            </div>
+          </div>
+          <template v-if="dashboardStore.availableLanguages.length">
+            <p :id="languagesHintId" class="text-xs text-[var(--muted)]">
+              {{ t('dashboard.search.advanced.multi_select_hint') }}
+            </p>
+            <select
+              v-model="configureStore.sourceForm.languages"
+              class="terminal-select min-h-[220px]"
+              multiple
+              :aria-describedby="languagesHintId"
+            >
+              <option
+                v-for="language in dashboardStore.availableLanguages"
+                :key="`source-language-${language.code}`"
+                :value="language.code"
+              >
+                {{ language.label }} ({{ language.code }})
+              </option>
+            </select>
+          </template>
+          <p v-else class="text-sm text-[var(--muted)]">{{ t('dashboard.search.advanced.no_languages') }}</p>
+        </div>
         <label class="space-y-2 sm:col-span-2">
           <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
             {{ t('dashboard.search.advanced.include_domains') }}
@@ -306,7 +347,7 @@ const resultOrderLabel = (source: SourceScope) =>
             <p class="text-sm text-[var(--text)]">{{ source.name }}</p>
             <p class="mt-1 text-xs text-[var(--muted)]">
               {{ kindLabel(source.kind) }} / {{ categoryLabel(source) }} / {{ engineLabel(source) }} /
-              {{ resultOrderLabel(source) }}
+              {{ languageLabel(source) }} / {{ resultOrderLabel(source) }}
             </p>
           </div>
           <div class="flex flex-wrap gap-2">

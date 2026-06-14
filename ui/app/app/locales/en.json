@@ -122,7 +122,6 @@
         "searching": "Searching..."
       },
       "advanced": {
-        "language": "Language",
         "all_languages": "All languages",
         "safe_search": "Safe search",
         "safe_search_off": "Off",
@@ -147,8 +146,10 @@
         "raw_params": "Raw SearxNG params",
         "selected_categories": "Selected categories:",
         "selected_engines": "Selected engines:",
+        "selected_languages": "Selected languages:",
         "no_categories": "No categories are advertised by the connected SearxNG instance right now.",
         "no_engines": "No enabled engines are advertised by the connected SearxNG instance right now.",
+        "no_languages": "No languages are advertised by the connected SearxNG instance right now.",
         "multi_select_hint": "Hold Ctrl/Cmd (or Shift for a range) to select multiple."
       },
       "live_stream": {
@@ -282,7 +283,6 @@
         "name_placeholder": "Research repositories",
         "description_label": "Description",
         "kind_label": "Kind",
-        "any_language": "Any language",
         "max_results_label": "Max results",
         "time_range_auto": "Auto from topic lookback",
         "time_range_any": "No time filter",
