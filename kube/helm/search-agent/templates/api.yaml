@@ -30,6 +30,7 @@ spec:
     spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      enableServiceLinks: false
       containers:
         - name: api
           image: {{ include "search-agent.apiImage" . }}
@@ -54,6 +55,9 @@ spec:
             httpGet:
               path: /api/v1/health/
               port: {{ .Values.config.DJANGO_PORT | int }}
+              httpHeaders:
+                - name: Host
+                  value: localhost
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 10
@@ -61,6 +65,9 @@ spec:
             httpGet:
               path: /api/v1/health/
               port: {{ .Values.config.DJANGO_PORT | int }}
+              httpHeaders:
+                - name: Host
+                  value: localhost
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 6

@@ -38,6 +38,7 @@ spec:
       labels:
         {{- include "search-agent.componentLabels" (dict "root" $ "component" "searxng") | nindent 8 }}
     spec:
+      enableServiceLinks: false
       containers:
         - name: searxng
           image: {{ .Values.searxng.image }}

@@ -26,7 +26,6 @@ export default defineNuxtConfig({
   },
   css: ['./app/assets/css/main.css'],
   nitro: {
-    static: true,
     devProxy: {
       '/api/v1': `http://api:${process.env.DJANGO_PORT || '5000'}/api/v1`,
       // drf-spectacular swagger UI

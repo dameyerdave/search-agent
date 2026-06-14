@@ -15,6 +15,7 @@ spec:
       labels:
         {{- include "search-agent.componentLabels" (dict "root" $ "component" "cloudflared") | nindent 8 }}
     spec:
+      enableServiceLinks: false
       containers:
         - name: cloudflared
           image: {{ .Values.cloudflared.image }}
