@@ -156,7 +156,7 @@
         "title": "Live result stream",
         "no_snippet": "No snippet returned by SearxNG.",
         "score": "Score {score}",
-        "load_more": "Load more results",
+        "searching": "Scanning the signal deck for fresh results...",
         "loading": "Loading...",
         "showing_results": "Showing {count} results in 10-result pages.",
         "empty": "Run a live search to inspect results here."

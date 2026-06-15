@@ -191,6 +191,48 @@ textarea {
   font-family: 'Share Tech Mono', monospace;
 }
 
+@keyframes xuno-loading-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 12px rgba(93, 255, 153, 0.25));
+  }
+  50% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 26px rgba(93, 255, 153, 0.55));
+  }
+}
+
+@keyframes xuno-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.xuno-loading-mark {
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+.xuno-loading-mark svg {
+  width: 100%;
+  height: 100%;
+  animation: xuno-loading-pulse 1.8s ease-in-out infinite;
+}
+
+.xuno-loading-mark::before {
+  content: '';
+  position: absolute;
+  inset: -0.6rem;
+  border-radius: 1.6rem;
+  border: 2px solid transparent;
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  opacity: 0.5;
+  animation: xuno-loading-spin 1.4s linear infinite;
+}
+
 .pwa-install-dock {
   position: fixed;
   left: 50%;

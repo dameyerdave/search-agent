@@ -3,6 +3,11 @@ import { formatDate } from 'utils/dashboard'
 
 const searchStore = useSearchWorkspaceStore()
 const { t } = useI18n()
+
+useInfiniteScroll(window, () => searchStore.loadMoreLiveSearchResults(), {
+  distance: 240,
+  canLoadMore: () => searchStore.canLoadMoreLiveSearch && !searchStore.isRunningLiveSearch,
+})
 </script>
 
 <template>
@@ -12,7 +17,17 @@ const { t } = useI18n()
         {{ t('dashboard.search.live_stream.title') }}
       </p>
 
-      <div v-if="searchStore.liveSearchResponse && searchStore.liveSearchResults.length" class="space-y-3">
+      <div
+        v-if="searchStore.isLoadingFreshSearch"
+        class="flex flex-col items-center gap-4 rounded-2xl border border-[var(--line)] bg-black/25 p-10 text-center"
+      >
+        <XunoLoadingMark :label="t('dashboard.search.live_stream.searching')" />
+        <p class="mono-heading text-sm tracking-[0.22em] text-[var(--muted)] uppercase">
+          {{ t('dashboard.search.live_stream.searching') }}
+        </p>
+      </div>
+
+      <div v-else-if="searchStore.liveSearchResponse && searchStore.liveSearchResults.length" class="space-y-3">
         <article
           v-for="result in searchStore.liveSearchResults"
           :key="`${result.url}-${result.position}`"
@@ -53,18 +68,9 @@ const { t } = useI18n()
         </article>
 
         <div class="flex justify-center pt-2">
-          <button
-            v-if="searchStore.canLoadMoreLiveSearch"
-            class="terminal-button terminal-button-secondary"
-            :disabled="searchStore.isRunningLiveSearch"
-            @click="searchStore.loadMoreLiveSearchResults"
-          >
-            {{
-              searchStore.isRunningLiveSearch
-                ? t('dashboard.search.live_stream.loading')
-                : t('dashboard.search.live_stream.load_more')
-            }}
-          </button>
+          <p v-if="searchStore.isRunningLiveSearch" class="text-sm text-[var(--muted)]">
+            {{ t('dashboard.search.live_stream.loading') }}
+          </p>
           <p v-else class="text-sm text-[var(--muted)]">
             {{ t('dashboard.search.live_stream.showing_results', { count: searchStore.liveSearchLoadedCount }) }}
           </p>

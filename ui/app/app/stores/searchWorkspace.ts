@@ -54,6 +54,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
   const showAdvancedSearch = ref(false)
   const showLiveSearchSaveDialog = ref(false)
   const isRunningLiveSearch = ref(false)
+  const isLoadingFreshSearch = ref(false)
   const isSavingLiveSearchTopic = ref(false)
 
   const liveSearchResults = computed(() => liveSearchResponse.value?.results ?? [])
@@ -155,6 +156,10 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
     const shouldAppend = append && liveSearchResponse.value?.query === query
     const nextPage = shouldAppend ? liveSearchPage.value + 1 : 1
     isRunningLiveSearch.value = true
+    if (!shouldAppend) {
+      isLoadingFreshSearch.value = true
+      showAdvancedSearch.value = false
+    }
     dashboardStore.setBusy(
       shouldAppend ? 'dashboard.busy.loading_more_live_results' : 'dashboard.busy.running_live_search',
       { query },
@@ -203,6 +208,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
       toast.add({ title: getErrorMessage(error) || t('dashboard.errors.live_search_failed'), color: 'error' })
     } finally {
       isRunningLiveSearch.value = false
+      isLoadingFreshSearch.value = false
     }
   }
 
@@ -298,6 +304,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
     showAdvancedSearch,
     showLiveSearchSaveDialog,
     isRunningLiveSearch,
+    isLoadingFreshSearch,
     isSavingLiveSearchTopic,
     liveSearchResults,
     canSaveLiveSearch,
