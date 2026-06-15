@@ -1,10 +1,6 @@
 <script setup lang="ts">
 const dashboardStore = useDashboardStore()
 const { t } = useI18n()
-
-const hasProviderIssue = computed(
-  () => !dashboardStore.provider?.searxng_base_url || !dashboardStore.provider?.crawl4ai_enabled,
-)
 </script>
 
 <template>
@@ -27,7 +23,7 @@ const hasProviderIssue = computed(
       </div>
 
       <div
-        v-if="hasProviderIssue"
+        v-if="dashboardStore.hasProviderIssue"
         class="rounded-2xl border border-[var(--line)] bg-black/20 p-4 text-sm text-[var(--muted)]"
       >
         <p>

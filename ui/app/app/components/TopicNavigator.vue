@@ -37,10 +37,10 @@ const sourceNames = (topic: SearchTopic) =>
         <article
           v-for="topic in dashboardStore.topics"
           :key="topic.slug"
-          class="rounded-2xl border border-[var(--line)] bg-black/25 p-4"
+          class="overflow-hidden rounded-2xl border border-[var(--line)] bg-black/25 p-4"
         >
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
               <div class="flex flex-wrap gap-2">
                 <span class="pill" :class="topic.enabled ? 'text-[var(--accent)]' : 'text-[var(--muted)]'">
                   {{ topic.enabled ? t('dashboard.common.armed') : t('dashboard.common.paused_badge') }}
@@ -49,13 +49,23 @@ const sourceNames = (topic: SearchTopic) =>
                   {{ t(`dashboard.common.status.${summarizeStatus(topic.last_run_status)}`) }}
                 </span>
               </div>
-              <p class="mt-3 text-lg text-white">{{ topic.name }}</p>
+              <p class="mt-3 text-lg break-words text-white">{{ topic.name }}</p>
             </div>
-            <div class="sm:min-w-[92px] sm:text-right">
-              <p class="text-xs tracking-[0.2em] text-[var(--muted)] uppercase">
-                {{ t('dashboard.explore.topic_navigator.new') }}
-              </p>
-              <p class="mt-1 text-3xl text-white">{{ topic.new_results_count }}</p>
+            <div
+              class="flex shrink-0 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-black/20 text-center"
+            >
+              <div class="px-3 py-1.5">
+                <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.explore.topic_navigator.new') }}
+                </p>
+                <p class="mt-0.5 text-lg text-white">{{ topic.new_results_count }}</p>
+              </div>
+              <div class="px-3 py-1.5">
+                <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_matrix.stored') }}
+                </p>
+                <p class="mt-0.5 text-lg text-white">{{ topic.result_count }}</p>
+              </div>
             </div>
           </div>
 
@@ -69,16 +79,12 @@ const sourceNames = (topic: SearchTopic) =>
               <span class="text-[var(--text)]">{{ nextRunLabel(topic) }}</span>
             </p>
             <p>
-              {{ t('dashboard.explore.topic_navigator.stored_results') }}
-              <span class="text-[var(--text)]">{{ topic.result_count }}</span>
-            </p>
-            <p>
               {{ t('dashboard.explore.topic_navigator.last_checked') }}
               <span class="text-[var(--text)]">{{
                 formatDate(topic.last_checked_at) ?? t('dashboard.common.never')
               }}</span>
             </p>
-            <p>
+            <p class="break-words">
               {{ t('dashboard.explore.topic_navigator.sources') }}
               <span class="text-[var(--text)]">{{ sourceNames(topic) }}</span>
             </p>

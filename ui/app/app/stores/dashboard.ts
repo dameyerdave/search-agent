@@ -30,6 +30,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
   const availableEngines = computed(() => provider.value?.available_engines ?? [])
   const availableLanguages = computed(() => provider.value?.available_languages ?? [])
   const stats = computed(() => dashboard.value?.stats ?? null)
+  const hasProviderIssue = computed(() => !provider.value?.searxng_base_url || !provider.value?.crawl4ai_enabled)
 
   const workspaceTabs = [
     { key: 'search', labelKey: 'dashboard.nav.search.label' },
@@ -226,6 +227,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     availableEngines,
     availableLanguages,
     stats,
+    hasProviderIssue,
     workspaceTabs,
     visibleWorkspaceTabs,
     currentUserLabel,

@@ -48,7 +48,7 @@
     },
     "shell": {
       "header": {
-        "tagline": "searxng + crawl4ai",
+        "provider_warning": "SearXNG / Crawl4AI not configured",
         "operator_label": "Operator",
         "checking_identity": "Checking identity...",
         "sign_out": "Sign out",
@@ -204,7 +204,6 @@
         "new": "New",
         "schedule": "Schedule:",
         "next_run": "Next run:",
-        "stored_results": "Stored results:",
         "last_checked": "Last checked:",
         "sources": "Sources:",
         "sources_none": "None",

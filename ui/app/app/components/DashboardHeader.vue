@@ -9,9 +9,9 @@ const { t } = useI18n()
     <div class="relative z-10 flex items-start justify-between gap-4">
       <div class="max-w-3xl space-y-3">
         <XunoBrandMark class="max-w-[30rem]" />
-        <div class="pill w-fit bg-[var(--accent-soft)] text-[var(--accent)]">
-          <span class="h-2 w-2 rounded-full bg-[var(--accent)] shadow-[0_0_14px_var(--accent)]" />
-          {{ t('dashboard.shell.header.tagline') }}
+        <div v-if="dashboardStore.hasProviderIssue" class="pill w-fit bg-[rgba(255,125,125,0.12)] text-[var(--danger)]">
+          <span class="h-2 w-2 rounded-full bg-[var(--danger)] shadow-[0_0_14px_var(--danger)]" />
+          {{ t('dashboard.shell.header.provider_warning') }}
         </div>
       </div>
 
