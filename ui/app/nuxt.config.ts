@@ -19,7 +19,7 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon/xuno-mark.svg' },
-        { rel: 'manifest', href: '/manifest.webmanifest' },
+        { rel: 'manifest', href: '/manifest.webmanifest', crossorigin: 'use-credentials' },
         { rel: 'apple-touch-icon', href: '/pwa/apple-touch-icon.png' },
       ],
     },
