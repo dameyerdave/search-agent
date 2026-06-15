@@ -288,11 +288,17 @@ def load_searxng_engines() -> list[str]:
     return sorted(available, key=str.lower)
 
 
+SEARXNG_FALLBACK_LOCALES = {
+    "en": "English",
+    "de": "Deutsch (German)",
+}
+
+
 def load_searxng_locales() -> dict[str, str]:
     payload = load_searxng_config()
     raw_locales = payload.get("locales") or {}
     if not isinstance(raw_locales, dict):
-        return {}
+        raw_locales = {}
 
     cleaned = {}
     for code, label in raw_locales.items():
@@ -301,6 +307,10 @@ def load_searxng_locales() -> dict[str, str]:
             continue
         clean_label = str(label).strip() or clean_code
         cleaned[clean_code] = clean_label
+
+    if not cleaned:
+        return dict(SEARXNG_FALLBACK_LOCALES)
+
     return cleaned
 
 

@@ -144,6 +144,14 @@ def get_cloudflare_access_token_verifier() -> CloudflareAccessTokenVerifier:
     )
 
 
+def _split_full_name(full_name: str) -> tuple[str, str]:
+    if not full_name:
+        return "", ""
+
+    first, _, last = full_name.partition(" ")
+    return first.strip(), last.strip()
+
+
 def _split_cloudflare_name(claims: dict) -> tuple[str, str]:
     first_name = str(claims.get("given_name") or "").strip()
     last_name = str(claims.get("family_name") or "").strip()
@@ -151,12 +159,44 @@ def _split_cloudflare_name(claims: dict) -> tuple[str, str]:
     if first_name or last_name:
         return first_name, last_name
 
-    full_name = str(claims.get("name") or "").strip()
-    if not full_name:
+    return _split_full_name(str(claims.get("name") or "").strip())
+
+
+def _fetch_cloudflare_identity_name(team_domain: str, token: str) -> tuple[str, str]:
+    """Fall back to Cloudflare's get-identity endpoint for the user's full name.
+
+    The Cf-Access-Jwt-Assertion JWT only carries a minimal claim set (sub,
+    email, ...) - it does not include given_name/family_name/name unless the
+    IdP is configured to add them as custom claims. get-identity returns the
+    full identity payload (including "name") for the same token.
+    """
+    try:
+        response = httpx.get(
+            f"{team_domain}/cdn-cgi/access/get-identity",
+            headers={"Accept": "application/json"},
+            cookies={"CF_Authorization": token},
+            timeout=5.0,
+        )
+        response.raise_for_status()
+        identity = response.json()
+    except (httpx.HTTPError, ValueError):
         return "", ""
 
-    first, _, last = full_name.partition(" ")
-    return first.strip(), last.strip()
+    if not isinstance(identity, dict):
+        return "", ""
+
+    return _split_full_name(str(identity.get("name") or "").strip())
+
+
+def _resolve_cloudflare_identity_name(team_domain: str, token: str, cache_key_subject: str) -> tuple[str, str]:
+    cache_key = f"cloudflare-access:identity-name:{slugify(cache_key_subject) or 'unknown'}"
+    cached = cache.get(cache_key)
+    if isinstance(cached, list) and len(cached) == 2:
+        return cached[0], cached[1]
+
+    first_name, last_name = _fetch_cloudflare_identity_name(team_domain, token)
+    cache.set(cache_key, [first_name, last_name], timeout=3600)
+    return first_name, last_name
 
 
 def _generate_unique_username(*, subject: str, email: str) -> str:
@@ -201,7 +241,7 @@ def _sync_user_from_claims(user, *, email: str, first_name: str, last_name: str)
         user.save(update_fields=changed_fields)
 
 
-def resolve_cloudflare_user(claims: dict):
+def resolve_cloudflare_user(claims: dict, *, token: str = ""):
     subject = str(claims.get("sub") or "").strip()
     email = str(claims.get("email") or "").strip().lower()
 
@@ -211,6 +251,11 @@ def resolve_cloudflare_user(claims: dict):
         )
 
     first_name, last_name = _split_cloudflare_name(claims)
+    if not first_name and not last_name and token:
+        team_domain = getattr(settings, "CLOUDFLARE_ACCESS_TEAM_DOMAIN", "").strip().rstrip("/")
+        if team_domain:
+            first_name, last_name = _resolve_cloudflare_identity_name(team_domain, token, subject or email)
+
     user_model = get_user_model()
 
     with transaction.atomic():
@@ -267,7 +312,7 @@ class CloudflareAccessAuthentication(authentication.BaseAuthentication):
             return None
 
         claims = get_cloudflare_access_token_verifier().verify(token)
-        user = resolve_cloudflare_user(claims)
+        user = resolve_cloudflare_user(claims, token=token)
         self.enforce_csrf(request)
         return (user, claims)
 
