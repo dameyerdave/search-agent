@@ -1,5 +1,5 @@
 <template>
-  <div class="xuno-loading-mark" role="status" :aria-label="label">
+  <div class="xuno-loading-mark" :class="{ 'xuno-loading-mark--sm': small }" role="status" :aria-label="label">
     <svg viewBox="0 0 136 136" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <linearGradient id="xuno-loading-mark-bg" x1="2" y1="-4" x2="118" y2="130" gradientUnits="userSpaceOnUse">
@@ -34,5 +34,5 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{ label?: string }>()
+defineProps<{ label?: string; small?: boolean }>()
 </script>

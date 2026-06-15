@@ -7,26 +7,18 @@ interface BeforeInstallPromptEvent extends Event {
   }>
 }
 
-interface StandaloneNavigator extends Navigator {
-  standalone?: boolean
-}
-
 const { t } = useI18n()
+const { isStandalone, refresh: syncInstalledState } = useStandalone()
 
 const deferredPrompt = shallowRef<BeforeInstallPromptEvent | null>(null)
-const isInstalled = ref(false)
 const isIos = ref(false)
 const isSafari = ref(false)
 const isPanelOpen = ref(false)
 const hasSecureInstallContext = ref(true)
-let standaloneMediaQuery: MediaQueryList | null = null
 
-const canUseNativePrompt = computed(
-  () => hasSecureInstallContext.value && Boolean(deferredPrompt.value) && !isInstalled.value,
-)
+const canUseNativePrompt = computed(() => hasSecureInstallContext.value && Boolean(deferredPrompt.value))
 
 const badgeColor = computed(() => {
-  if (isInstalled.value) return 'green'
   if (!hasSecureInstallContext.value) return 'red'
   if (canUseNativePrompt.value) return 'primary'
   if (isIos.value) return 'amber'
@@ -34,7 +26,6 @@ const badgeColor = computed(() => {
 })
 
 const badgeLabel = computed(() => {
-  if (isInstalled.value) return t('pwa.badge.installed')
   if (!hasSecureInstallContext.value) return t('pwa.badge.secure')
   if (canUseNativePrompt.value) return t('pwa.badge.ready')
   if (isIos.value) return t('pwa.badge.phone')
@@ -42,17 +33,13 @@ const badgeLabel = computed(() => {
 })
 
 const buttonIcon = computed(() => {
-  if (isInstalled.value) return 'i-heroicons-check-circle'
   if (!hasSecureInstallContext.value) return 'i-heroicons-lock-closed'
   if (canUseNativePrompt.value) return 'i-heroicons-arrow-down-tray'
   if (isIos.value) return 'i-heroicons-device-phone-mobile'
   return 'i-heroicons-arrow-down-tray'
 })
 
-const buttonLabel = computed(() => (isInstalled.value ? t('pwa.button.installed') : t('pwa.button.install')))
-
 const panelTitle = computed(() => {
-  if (isInstalled.value) return t('pwa.panel.installed_title')
   if (!hasSecureInstallContext.value) return t('pwa.panel.secure_title')
   if (canUseNativePrompt.value) return t('pwa.panel.ready_title')
   if (isIos.value && isSafari.value) return t('pwa.panel.ios_title')
@@ -61,7 +48,6 @@ const panelTitle = computed(() => {
 })
 
 const panelDescription = computed(() => {
-  if (isInstalled.value) return t('pwa.panel.installed_description')
   if (!hasSecureInstallContext.value) return t('pwa.panel.secure_description')
   if (canUseNativePrompt.value) return t('pwa.panel.ready_description')
   if (isIos.value && isSafari.value) return t('pwa.panel.ios_description')
@@ -70,10 +56,6 @@ const panelDescription = computed(() => {
 })
 
 const instructionSteps = computed(() => {
-  if (isInstalled.value) {
-    return [t('pwa.steps.installed')]
-  }
-
   if (!hasSecureInstallContext.value) {
     return [t('pwa.steps.secure_context')]
   }
@@ -92,14 +74,6 @@ const instructionSteps = computed(() => {
 
   return [t('pwa.steps.browser_menu'), t('pwa.steps.confirm_install')]
 })
-
-const syncInstalledState = () => {
-  const navigatorWithStandalone = window.navigator as StandaloneNavigator
-  isInstalled.value =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.matchMedia('(display-mode: fullscreen)').matches ||
-    navigatorWithStandalone.standalone === true
-}
 
 const syncPlatformState = () => {
   const userAgent = window.navigator.userAgent.toLowerCase()
@@ -134,10 +108,6 @@ const onAppInstalled = () => {
   syncInstalledState()
 }
 
-const onDisplayModeChange = () => {
-  syncInstalledState()
-}
-
 const toggleInstallSurface = async () => {
   if (canUseNativePrompt.value) {
     await promptInstall()
@@ -163,36 +133,20 @@ const promptInstall = async () => {
 
 onMounted(() => {
   syncPlatformState()
-  syncInstalledState()
   void registerServiceWorker()
-
-  standaloneMediaQuery = window.matchMedia('(display-mode: standalone)')
-  if ('addEventListener' in standaloneMediaQuery) {
-    standaloneMediaQuery.addEventListener('change', onDisplayModeChange)
-  } else {
-    standaloneMediaQuery.addListener(onDisplayModeChange)
-  }
 
   window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
   window.addEventListener('appinstalled', onAppInstalled)
 })
 
 onBeforeUnmount(() => {
-  if (standaloneMediaQuery) {
-    if ('removeEventListener' in standaloneMediaQuery) {
-      standaloneMediaQuery.removeEventListener('change', onDisplayModeChange)
-    } else {
-      standaloneMediaQuery.removeListener(onDisplayModeChange)
-    }
-  }
-
   window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
   window.removeEventListener('appinstalled', onAppInstalled)
 })
 </script>
 
 <template>
-  <div class="pwa-install-dock">
+  <div v-if="!isStandalone" class="pwa-install-dock">
     <Transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="translate-y-3 opacity-0"
@@ -257,7 +211,7 @@ onBeforeUnmount(() => {
         class="pwa-install-button w-full justify-center sm:w-auto"
         @click="toggleInstallSurface"
       >
-        {{ buttonLabel }}
+        {{ t('pwa.button.install') }}
       </UButton>
     </div>
   </div>

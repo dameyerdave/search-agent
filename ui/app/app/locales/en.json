@@ -41,10 +41,10 @@
       }
     },
     "nav": {
-      "search": { "label": "Search", "eyebrow": "live searxng" },
-      "explore": { "label": "Explore", "eyebrow": "results terminal" },
-      "configure": { "label": "Configure", "eyebrow": "topics + sources" },
-      "runs": { "label": "Runs", "eyebrow": "telemetry + history" }
+      "search": { "label": "Search" },
+      "explore": { "label": "Explore" },
+      "configure": { "label": "Configure" },
+      "runs": { "label": "Runs" }
     },
     "shell": {
       "header": {
@@ -57,6 +57,11 @@
       },
       "status": {
         "checking_access": "Checking Cloudflare Access..."
+      },
+      "pull_to_refresh": {
+        "pull": "Pull to refresh",
+        "release": "Release to refresh",
+        "refreshing": "Refreshing..."
       }
     },
     "busy": {
@@ -205,10 +210,6 @@
         "sources_none": "None",
         "empty": "No topics configured yet. Open the configure workspace to create the first one."
       },
-      "stats": {
-        "new_findings": "New findings",
-        "stored_results": "Stored results"
-      },
       "results_terminal": {
         "title": "Results terminal",
         "ack_visible": "Ack visible",
@@ -342,19 +343,15 @@
   },
   "pwa": {
     "badge": {
-      "installed": "Installed",
       "secure": "HTTPS needed",
       "ready": "Ready",
       "phone": "Phone setup",
       "manual": "Browser menu"
     },
     "button": {
-      "install": "Install app",
-      "installed": "App installed"
+      "install": "Install app"
     },
     "panel": {
-      "installed_title": "Installed",
-      "installed_description": "This device is already running xuno as an installed app.",
       "secure_title": "Use HTTPS",
       "secure_description": "App installation needs a secure origin. Open this app on localhost or over HTTPS before trying to install it on a phone or in the browser.",
       "ready_title": "Install xuno",
@@ -369,7 +366,6 @@
       "close": "Close"
     },
     "steps": {
-      "installed": "Launch xuno from your home screen, Dock, or app launcher whenever you want the app shell.",
       "secure_context": "Serve this app from localhost or HTTPS so the service worker and install flow can run.",
       "native_prompt": "Tap Install app and confirm the browser prompt to add xuno to this device.",
       "ios_share": "Tap Safari’s Share button.",
@@ -382,8 +378,6 @@
   "results": {
     "headers": {
       "result": "Result",
-      "topic": "Topic",
-      "scope": "Scope",
       "when": "When"
     },
     "badges": {
@@ -420,11 +414,6 @@
       "research": "Research",
       "custom": "Custom",
       "new_only": "Show only new results"
-    },
-    "stats": {
-      "results": "Results",
-      "mapped": "Mapped results",
-      "locations": "Locations"
     },
     "selection": {
       "title": "Marker details",

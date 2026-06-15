@@ -32,10 +32,10 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
   const stats = computed(() => dashboard.value?.stats ?? null)
 
   const workspaceTabs = [
-    { key: 'search', labelKey: 'dashboard.nav.search.label', eyebrowKey: 'dashboard.nav.search.eyebrow' },
-    { key: 'explore', labelKey: 'dashboard.nav.explore.label', eyebrowKey: 'dashboard.nav.explore.eyebrow' },
-    { key: 'configure', labelKey: 'dashboard.nav.configure.label', eyebrowKey: 'dashboard.nav.configure.eyebrow' },
-    { key: 'runs', labelKey: 'dashboard.nav.runs.label', eyebrowKey: 'dashboard.nav.runs.eyebrow' },
+    { key: 'search', labelKey: 'dashboard.nav.search.label' },
+    { key: 'explore', labelKey: 'dashboard.nav.explore.label' },
+    { key: 'configure', labelKey: 'dashboard.nav.configure.label' },
+    { key: 'runs', labelKey: 'dashboard.nav.runs.label' },
   ] as const
 
   const visibleWorkspaceTabs = computed(() =>

@@ -11,7 +11,6 @@ const exploreStore = useExploreWorkspaceStore()
   >
     <div class="space-y-5">
       <TopicNavigator />
-      <ExploreStatsRow />
     </div>
 
     <div class="space-y-5">

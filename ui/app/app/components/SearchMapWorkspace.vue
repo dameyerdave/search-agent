@@ -57,11 +57,6 @@ const mapQuery = useQuery({
 })
 
 const markers = computed(() => mapQuery.data.value?.markers ?? [])
-const mapStats = computed(() => ({
-  resultCount: mapQuery.data.value?.result_count ?? 0,
-  mappedResultCount: mapQuery.data.value?.mapped_result_count ?? 0,
-  locationCount: mapQuery.data.value?.location_count ?? 0,
-}))
 const selectedMarker = computed<SearchResultMapMarker | null>(
   () => markers.value.find((marker) => marker.id === selectedMarkerId.value) ?? null,
 )
@@ -137,27 +132,6 @@ const mapEmptyLabel = computed(() => (hasSelectedTopic.value ? t('map.empty_topi
     </section>
 
     <div class="space-y-5">
-      <section class="grid gap-4 sm:grid-cols-3 2xl:grid-cols-1">
-        <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
-          <p class="text-xs tracking-[0.28em] text-[var(--muted)] uppercase">
-            {{ t('map.stats.results') }}
-          </p>
-          <p class="mt-3 text-4xl text-white">{{ mapStats.resultCount }}</p>
-        </article>
-        <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
-          <p class="text-xs tracking-[0.28em] text-[var(--muted)] uppercase">
-            {{ t('map.stats.mapped') }}
-          </p>
-          <p class="mt-3 text-4xl text-white">{{ mapStats.mappedResultCount }}</p>
-        </article>
-        <article class="terminal-panel relative overflow-hidden rounded-[1.4rem] p-5">
-          <p class="text-xs tracking-[0.28em] text-[var(--muted)] uppercase">
-            {{ t('map.stats.locations') }}
-          </p>
-          <p class="mt-3 text-4xl text-white">{{ mapStats.locationCount }}</p>
-        </article>
-      </section>
-
       <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
         <div class="relative z-10 space-y-4">
           <div>

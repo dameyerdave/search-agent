@@ -43,20 +43,6 @@ const previewText = (result: SearchResult) => result.snippet || result.content |
           </p>
 
           <div class="grid gap-3 rounded-2xl border border-[var(--line)] bg-black/20 p-3">
-            <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
-                {{ t('results.headers.topic') }}
-              </p>
-              <p class="mt-1 text-sm text-[var(--text)]">{{ result.topic_name }}</p>
-            </div>
-            <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
-                {{ t('results.headers.scope') }}
-              </p>
-              <p class="mt-1 text-sm text-[var(--muted)]">
-                {{ result.source_scope_name || t('results.not_available') }}
-              </p>
-            </div>
             <div class="grid gap-1 text-sm text-[var(--muted)]">
               <p>
                 {{ t('results.meta.seen', { date: props.formatDate(result.first_seen_at) }) }}
@@ -92,8 +78,6 @@ const previewText = (result: SearchResult) => result.snippet || result.content |
         <thead>
           <tr>
             <th>{{ t('results.headers.result') }}</th>
-            <th>{{ t('results.headers.topic') }}</th>
-            <th>{{ t('results.headers.scope') }}</th>
             <th>{{ t('results.headers.when') }}</th>
           </tr>
         </thead>
@@ -131,10 +115,6 @@ const previewText = (result: SearchResult) => result.snippet || result.content |
                 </div>
               </div>
             </td>
-            <td class="text-sm text-[var(--text)]">{{ result.topic_name }}</td>
-            <td class="text-sm text-[var(--muted)]">
-              {{ result.source_scope_name || t('results.not_available') }}
-            </td>
             <td class="text-sm text-[var(--muted)]">
               <p>{{ t('results.meta.seen', { date: props.formatDate(result.first_seen_at) }) }}</p>
               <p class="mt-2">
@@ -143,7 +123,7 @@ const previewText = (result: SearchResult) => result.snippet || result.content |
             </td>
           </tr>
           <tr v-if="props.results.length === 0">
-            <td colspan="4" class="text-center text-sm text-[var(--muted)]">
+            <td colspan="2" class="text-center text-sm text-[var(--muted)]">
               {{ t('results.empty') }}
             </td>
           </tr>

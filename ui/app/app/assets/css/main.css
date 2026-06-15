@@ -71,6 +71,8 @@ textarea {
 }
 
 .terminal-panel {
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid var(--line);
   background: linear-gradient(180deg, var(--panel), var(--panel-strong));
   box-shadow:
@@ -231,6 +233,37 @@ textarea {
   border-right-color: var(--accent);
   opacity: 0.5;
   animation: xuno-loading-spin 1.4s linear infinite;
+}
+
+.xuno-loading-mark--sm {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.xuno-loading-mark--sm::before {
+  inset: -0.3rem;
+  border-radius: 0.9rem;
+}
+
+.pull-to-refresh {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 4rem;
+  padding-top: env(safe-area-inset-top);
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.pull-to-refresh-dragging {
+  transition: none;
 }
 
 .pwa-install-dock {

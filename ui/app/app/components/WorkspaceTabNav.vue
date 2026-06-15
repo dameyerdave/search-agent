@@ -1,32 +1,34 @@
 <script setup lang="ts">
 const dashboardStore = useDashboardStore()
 const { t } = useI18n()
+
+const tabIcons: Record<string, string> = {
+  search: 'i-heroicons-magnifying-glass',
+  explore: 'i-heroicons-globe-alt',
+  configure: 'i-heroicons-cog-6-tooth',
+  runs: 'i-heroicons-clock',
+}
 </script>
 
 <template>
-  <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-3 sm:p-4">
-    <div class="relative z-10 grid gap-3 md:grid-cols-2 xl:grid-cols-4" role="tablist">
-      <button
-        v-for="tab in dashboardStore.visibleWorkspaceTabs"
-        :key="tab.key"
-        role="tab"
-        :aria-selected="dashboardStore.activeWorkspace === tab.key"
-        class="rounded-[1.2rem] border px-4 py-4 text-left transition-all"
-        :class="
-          dashboardStore.activeWorkspace === tab.key
-            ? 'border-[var(--accent)] bg-[var(--accent-soft)] shadow-[0_0_24px_rgba(91,255,147,0.12)]'
-            : 'border-[var(--line)] bg-black/25 hover:border-[var(--accent)]/60 hover:bg-black/35'
-        "
-        @click="dashboardStore.activeWorkspace = tab.key"
-      >
-        <p
-          class="text-[11px] tracking-[0.28em] uppercase"
-          :class="dashboardStore.activeWorkspace === tab.key ? 'text-[var(--accent)]' : 'text-[var(--muted)]'"
+  <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-2 sm:p-3">
+    <div class="relative z-10 flex justify-center gap-2" role="tablist">
+      <UTooltip v-for="tab in dashboardStore.visibleWorkspaceTabs" :key="tab.key" :text="t(tab.labelKey)">
+        <button
+          role="tab"
+          :aria-selected="dashboardStore.activeWorkspace === tab.key"
+          :aria-label="t(tab.labelKey)"
+          class="flex h-12 w-12 items-center justify-center rounded-[1rem] border transition-all sm:h-14 sm:w-14"
+          :class="
+            dashboardStore.activeWorkspace === tab.key
+              ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_24px_rgba(91,255,147,0.12)]'
+              : 'border-[var(--line)] bg-black/25 text-[var(--muted)] hover:border-[var(--accent)]/60 hover:bg-black/35 hover:text-[var(--accent)]'
+          "
+          @click="dashboardStore.activeWorkspace = tab.key"
         >
-          {{ t(tab.eyebrowKey) }}
-        </p>
-        <p class="mono-heading mt-2 text-lg text-white">{{ t(tab.labelKey) }}</p>
-      </button>
+          <UIcon :name="tabIcons[tab.key]" class="size-5 sm:size-6" />
+        </button>
+      </UTooltip>
     </div>
   </section>
 </template>
