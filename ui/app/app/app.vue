@@ -3,10 +3,11 @@ const dashboardStore = useDashboardStore()
 
 // Instantiate eagerly during this component's synchronous setup so their
 // useI18n()/useToast() calls run with a valid Vue instance - bootstrap()
-// later calls useExploreWorkspaceStore()/useRunsWorkspaceStore() from an
-// async continuation (no current instance), which would otherwise throw.
+// later calls these stores from an async continuation (no current instance),
+// which would otherwise throw.
 useExploreWorkspaceStore()
 useRunsWorkspaceStore()
+useSavedWorkspaceStore()
 
 watch(
   () => dashboardStore.totalNewResults,
@@ -41,6 +42,7 @@ onMounted(() => {
 
           <SearchWorkspace />
           <ExploreWorkspace />
+          <SavedWorkspace />
           <ConfigureWorkspace />
           <RunsWorkspace />
         </template>

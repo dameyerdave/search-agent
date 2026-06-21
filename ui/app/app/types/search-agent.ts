@@ -103,6 +103,15 @@ export interface SearchRun {
   updated_at: string
 }
 
+export interface SavedFolder {
+  id: number
+  name: string
+  sort_order: number
+  result_count: number
+  created_at: string
+  updated_at: string
+}
+
 export interface SearchResult {
   id: number
   topic: number
@@ -124,6 +133,8 @@ export interface SearchResult {
   is_new: boolean
   is_saved: boolean
   saved_title: string
+  folder: number | null
+  folder_name: string | null
   created_at: string
   updated_at: string
 }

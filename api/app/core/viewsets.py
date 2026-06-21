@@ -1,16 +1,16 @@
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .map_serializers import SearchResultMapResponseSerializer
-from django.utils import timezone
-
-from .models import SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
-from .querysets import owned_results, owned_runs, owned_source_scopes, owned_topics
+from .models import SavedFolder, SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+from .querysets import owned_folders, owned_results, owned_runs, owned_source_scopes, owned_topics
 from .tasks import run_topic_search_task
 from .result_locations import build_result_location_map_payload
 from .serializers import (
+    SavedFolderSerializer,
     SearchProviderConfigSerializer,
     SearchResultSerializer,
     SearchRunSerializer,
@@ -18,6 +18,23 @@ from .serializers import (
     SourceScopeSerializer,
 )
 from .services import run_topic_search
+
+
+def _resolve_folder(request, user):
+    """Return a SavedFolder (or None) from folder_id or folder_name in request.data."""
+    folder_id = request.data.get("folder_id")
+    folder_name = (request.data.get("folder_name") or "").strip()
+    if folder_id:
+        try:
+            return SavedFolder.objects.get(pk=folder_id, owner=user)
+        except SavedFolder.DoesNotExist:
+            return None
+    if folder_name:
+        folder, _ = SavedFolder.objects.get_or_create(
+            owner=user, name=folder_name, defaults={"sort_order": 0}
+        )
+        return folder
+    return None
 
 
 class SourceScopeViewSet(viewsets.ModelViewSet):
@@ -105,6 +122,8 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
         scope = self.request.query_params.get("scope")
         kind = self.request.query_params.get("kind")
         only_new = self.request.query_params.get("is_new")
+        only_saved = self.request.query_params.get("is_saved")
+        folder_param = self.request.query_params.get("folder")
         query = self.request.query_params.get("q")
 
         if topic:
@@ -115,6 +134,12 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(source_scope__kind=kind)
         if only_new in {"true", "false"}:
             queryset = queryset.filter(is_new=only_new == "true")
+        if only_saved in {"true", "false"}:
+            queryset = queryset.filter(is_saved=only_saved == "true")
+        if folder_param == "unfiled":
+            queryset = queryset.filter(is_saved=True, folder__isnull=True)
+        elif folder_param:
+            queryset = queryset.filter(folder_id=folder_param)
         if query:
             queryset = queryset.filter(
                 Q(title__icontains=query)
@@ -147,9 +172,11 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
     def save(self, request, pk=None):
         result = self.get_object()
         title = (request.data.get("title") or "").strip() or result.title
+        folder = _resolve_folder(request, request.user)
         result.is_saved = True
         result.saved_title = title
-        result.save(update_fields=["is_saved", "saved_title", "updated_at"])
+        result.folder = folder
+        result.save(update_fields=["is_saved", "saved_title", "folder", "updated_at"])
         return Response(SearchResultSerializer(result, context={"request": request}).data)
 
     @action(detail=True, methods=["post"])
@@ -157,5 +184,26 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
         result = self.get_object()
         result.is_saved = False
         result.saved_title = ""
-        result.save(update_fields=["is_saved", "saved_title", "updated_at"])
+        result.folder = None
+        result.save(update_fields=["is_saved", "saved_title", "folder", "updated_at"])
         return Response(SearchResultSerializer(result, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"])
+    def move(self, request, pk=None):
+        result = self.get_object()
+        folder = _resolve_folder(request, request.user)
+        result.folder = folder
+        result.save(update_fields=["folder", "updated_at"])
+        return Response(SearchResultSerializer(result, context={"request": request}).data)
+
+
+class SavedFolderViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = SavedFolder.objects.none()
+    serializer_class = SavedFolderSerializer
+
+    def get_queryset(self):
+        return owned_folders(self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)

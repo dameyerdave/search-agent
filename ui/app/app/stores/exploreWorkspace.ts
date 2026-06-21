@@ -62,13 +62,22 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
     await dashboardStore.refreshAll()
   }
 
-  const saveResult = async (id: number, title: string) => {
+  const saveResult = async (
+    id: number,
+    title: string,
+    folderId: number | null = null,
+    newFolderName: string = '',
+  ) => {
     try {
-      const updated = await api.post<SearchResult>(`/api/v1/results/${id}/save/`, { title })
+      const body: Record<string, unknown> = { title }
+      if (newFolderName) body.folder_name = newFolderName
+      else if (folderId) body.folder_id = folderId
+      const updated = await api.post<SearchResult>(`/api/v1/results/${id}/save/`, body)
       if (resultsPage.value) {
         const idx = resultsPage.value.results.findIndex((r) => r.id === id)
         if (idx !== -1) resultsPage.value.results[idx] = updated
       }
+      await useSavedWorkspaceStore().loadFolders()
       toast.add({ title: t('results.save_success'), color: 'success' })
     } catch (error: unknown) {
       toast.add({ title: getErrorMessage(error) || t('results.save_error'), color: 'error' })

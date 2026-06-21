@@ -1,6 +1,14 @@
 from rest_framework import serializers
 
-from .models import SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+from .models import SavedFolder, SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+
+
+class SavedFolderSerializer(serializers.ModelSerializer):
+    result_count = serializers.IntegerField(read_only=True, default=0)
+
+    class Meta:
+        model = SavedFolder
+        fields = ("id", "name", "sort_order", "result_count", "created_at", "updated_at")
 
 
 def clean_string_list(value):
@@ -404,6 +412,7 @@ class SearchResultSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
+    folder_name = serializers.CharField(source="folder.name", read_only=True, allow_null=True)
 
     class Meta:
         model = SearchResult
@@ -428,6 +437,8 @@ class SearchResultSerializer(serializers.ModelSerializer):
             "is_new",
             "is_saved",
             "saved_title",
+            "folder",
+            "folder_name",
             "created_at",
             "updated_at",
         )

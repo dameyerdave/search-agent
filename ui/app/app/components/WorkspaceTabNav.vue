@@ -5,6 +5,7 @@ const { t } = useI18n()
 const tabIcons: Record<string, string> = {
   search: 'i-heroicons-magnifying-glass',
   explore: 'i-heroicons-globe-alt',
+  saved: 'i-heroicons-bookmark',
   configure: 'i-heroicons-cog-6-tooth',
   runs: 'i-heroicons-clock',
 }

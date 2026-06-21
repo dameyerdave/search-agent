@@ -29,6 +29,7 @@
         "reset": "Reset",
         "close": "Close",
         "cancel": "Cancel",
+        "save": "Save",
         "edit": "Edit",
         "delete": "Delete",
         "inspect": "Inspect",
@@ -43,6 +44,7 @@
     "nav": {
       "search": { "label": "Search" },
       "explore": { "label": "Explore" },
+      "saved": { "label": "Saved" },
       "configure": { "label": "Configure" },
       "runs": { "label": "Runs" }
     },
@@ -398,6 +400,7 @@
       "button": "Save",
       "unsave": "Remove",
       "title_label": "Title",
+      "folder_label": "Folder",
       "confirm": "Save result"
     },
     "save_success": "Result saved",
@@ -406,6 +409,38 @@
     "not_available": "n/a",
     "no_preview": "No preview available.",
     "empty": "No results match the current filter set."
+  },
+  "saved": {
+    "folders": {
+      "title": "Folders",
+      "all_saved": "All saved",
+      "unfiled": "Unfiled",
+      "rename": "Rename",
+      "delete": "Delete",
+      "confirm_delete": "Delete folder \"{name}\" and move its results to Unfiled?",
+      "new_folder": "New folder",
+      "new_folder_placeholder": "Folder name...",
+      "new_folder_option": "New folder..."
+    },
+    "results": {
+      "all_title": "All saved results",
+      "select_folder_prompt": "Select a folder to view its saved results.",
+      "empty": "No saved results in this folder yet.",
+      "move": "Move",
+      "remove": "Remove",
+      "move_to": "Move to folder",
+      "confirm_move": "Move result",
+      "showing": "Showing {shown} of {total} saved results"
+    },
+    "errors": {
+      "load_folders_failed": "Failed to load folders.",
+      "load_results_failed": "Failed to load saved results.",
+      "create_folder_failed": "Failed to create folder.",
+      "rename_folder_failed": "Failed to rename folder.",
+      "delete_folder_failed": "Failed to delete folder.",
+      "move_result_failed": "Failed to move result.",
+      "unsave_result_failed": "Failed to remove saved result."
+    }
   },
   "map": {
     "title": "Topic location overlay",

@@ -2,6 +2,7 @@
 import type { SearchResult } from 'types/search-agent'
 
 const { t } = useI18n()
+const savedStore = useSavedWorkspaceStore()
 
 const props = defineProps<{
   results: SearchResult[]
@@ -9,7 +10,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [id: number, title: string]
+  save: [id: number, title: string, folderId: number | null, newFolderName: string]
   unsave: [id: number]
 }>()
 
@@ -17,14 +18,27 @@ const previewText = (result: SearchResult) => result.snippet || result.content |
 
 const editingId = ref<number | null>(null)
 const editTitle = ref('')
+const editFolderId = ref<number | null>(null)
+const editNewFolderName = ref('')
+const isNewFolder = computed(() => editFolderId.value === -1)
 
 const openSaveForm = (result: SearchResult) => {
   editingId.value = result.id
   editTitle.value = result.saved_title || result.title
+  editNewFolderName.value = ''
+  const suggested = savedStore.suggestFolderName(result)
+  const match = savedStore.folders.find((f) => f.name === suggested)
+  editFolderId.value = match ? match.id : (savedStore.folders.length ? null : null)
+  if (!match && suggested) {
+    editNewFolderName.value = suggested
+    editFolderId.value = -1
+  }
 }
 
 const confirmSave = (result: SearchResult) => {
-  emit('save', result.id, editTitle.value.trim() || result.title)
+  const folderId = isNewFolder.value ? null : editFolderId.value
+  const newName = isNewFolder.value ? editNewFolderName.value.trim() : ''
+  emit('save', result.id, editTitle.value.trim() || result.title, folderId, newName)
   editingId.value = null
 }
 
@@ -91,20 +105,20 @@ const cancelSave = () => {
           <div v-if="editingId === result.id" class="space-y-2 rounded-xl border border-[var(--line)] bg-black/30 p-3">
             <label class="space-y-1.5">
               <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('results.save.title_label') }}</span>
-              <input
-                v-model="editTitle"
-                class="terminal-input"
-                @keyup.enter="confirmSave(result)"
-                @keyup.escape="cancelSave"
-              />
+              <input v-model="editTitle" class="terminal-input" @keyup.enter="confirmSave(result)" @keyup.escape="cancelSave" />
             </label>
+            <label class="space-y-1.5">
+              <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('results.save.folder_label') }}</span>
+              <select v-model="editFolderId" class="terminal-select">
+                <option :value="null">{{ t('saved.folders.unfiled') }}</option>
+                <option v-for="f in savedStore.folders" :key="f.id" :value="f.id">{{ f.name }}</option>
+                <option :value="-1">{{ t('saved.folders.new_folder_option') }}</option>
+              </select>
+            </label>
+            <input v-if="isNewFolder" v-model="editNewFolderName" class="terminal-input" :placeholder="t('saved.folders.new_folder_placeholder')" />
             <div class="flex gap-2">
-              <button class="terminal-button terminal-button-primary" @click="confirmSave(result)">
-                {{ t('results.save.confirm') }}
-              </button>
-              <button class="terminal-button terminal-button-secondary" @click="cancelSave">
-                {{ t('dashboard.common.buttons.cancel') }}
-              </button>
+              <button class="terminal-button terminal-button-primary" @click="confirmSave(result)">{{ t('results.save.confirm') }}</button>
+              <button class="terminal-button terminal-button-secondary" @click="cancelSave">{{ t('dashboard.common.buttons.cancel') }}</button>
             </div>
           </div>
 
@@ -191,6 +205,15 @@ const cancelSave = () => {
                       @keyup.escape="cancelSave"
                     />
                   </label>
+                  <label class="space-y-1.5">
+                    <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('results.save.folder_label') }}</span>
+                    <select v-model="editFolderId" class="terminal-select">
+                      <option :value="null">{{ t('saved.folders.unfiled') }}</option>
+                      <option v-for="f in savedStore.folders" :key="f.id" :value="f.id">{{ f.name }}</option>
+                      <option :value="-1">{{ t('saved.folders.new_folder_option') }}</option>
+                    </select>
+                  </label>
+                  <input v-if="isNewFolder" v-model="editNewFolderName" class="terminal-input" :placeholder="t('saved.folders.new_folder_placeholder')" />
                   <div class="flex gap-2">
                     <button class="terminal-button terminal-button-primary" @click="confirmSave(result)">
                       {{ t('results.save.confirm') }}

@@ -1,6 +1,6 @@
 from django.db.models import Count, Q
 
-from .models import SearchResult, SearchRun, SearchTopic, SourceScope
+from .models import SavedFolder, SearchResult, SearchRun, SearchTopic, SourceScope
 
 
 def owned_source_scopes(user):
@@ -31,6 +31,14 @@ def owned_runs(user):
 def owned_results(user):
     if not user.is_authenticated:
         return SearchResult.objects.none()
-    return SearchResult.objects.select_related("topic", "source_scope", "last_run").filter(
+    return SearchResult.objects.select_related("topic", "source_scope", "last_run", "folder").filter(
         topic__owner=user
+    )
+
+
+def owned_folders(user):
+    if not user.is_authenticated:
+        return SavedFolder.objects.none()
+    return SavedFolder.objects.filter(owner=user).annotate(
+        result_count=Count("results", filter=Q(results__is_saved=True), distinct=True)
     )

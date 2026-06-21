@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 
 from core import views
 from core.viewsets import (
+    SavedFolderViewSet,
     SearchProviderConfigViewSet,
     SearchResultViewSet,
     SearchRunViewSet,
@@ -19,6 +20,7 @@ router.register("topics", SearchTopicViewSet, basename="topic")
 router.register("provider-config", SearchProviderConfigViewSet, basename="provider-config")
 router.register("runs", SearchRunViewSet, basename="run")
 router.register("results", SearchResultViewSet, basename="result")
+router.register("folders", SavedFolderViewSet, basename="folder")
 
 urlpatterns = [
     path("admin/", admin.site.urls),

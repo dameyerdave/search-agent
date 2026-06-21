@@ -281,6 +281,25 @@ class SearchRun(TimestampedModel):
         return f"{self.topic.name} @ {self.started_at:%Y-%m-%d %H:%M}"
 
 
+class SavedFolder(TimestampedModel):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="saved_folders",
+    )
+    name = models.CharField(max_length=200)
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "name"], name="unique_folder_per_owner")
+        ]
+
+    def __str__(self):
+        return self.name
+
+
 class SearchResult(TimestampedModel):
     topic = models.ForeignKey(
         SearchTopic,
@@ -316,6 +335,13 @@ class SearchResult(TimestampedModel):
     is_new = models.BooleanField(default=True)
     is_saved = models.BooleanField(default=False, db_index=True)
     saved_title = models.CharField(max_length=500, blank=True)
+    folder = models.ForeignKey(
+        SavedFolder,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="results",
+    )
     location_signature = models.CharField(max_length=40, blank=True)
     raw_result = models.JSONField(default=dict, blank=True)
 

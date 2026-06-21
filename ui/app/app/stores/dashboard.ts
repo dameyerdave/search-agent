@@ -13,7 +13,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
   const isBootstrappingAuth = ref(true)
   const isLoadingDashboard = ref(false)
   const isSavingProvider = ref(false)
-  const activeWorkspace = ref<'search' | 'explore' | 'configure' | 'runs'>('search')
+  const activeWorkspace = ref<'search' | 'explore' | 'configure' | 'runs' | 'saved'>('search')
   const activeTopicRun = ref<string | null>(null)
   const activeTopicAcknowledge = ref<string | null>(null)
 
@@ -38,6 +38,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
   const workspaceTabs = [
     { key: 'search', labelKey: 'dashboard.nav.search.label' },
     { key: 'explore', labelKey: 'dashboard.nav.explore.label' },
+    { key: 'saved', labelKey: 'dashboard.nav.saved.label' },
     { key: 'configure', labelKey: 'dashboard.nav.configure.label' },
     { key: 'runs', labelKey: 'dashboard.nav.runs.label' },
   ] as const
@@ -82,10 +83,12 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     try {
       const exploreStore = useExploreWorkspaceStore()
       const runsStore = useRunsWorkspaceStore()
+      const savedStore = useSavedWorkspaceStore()
       await Promise.all([
         loadDashboard(),
         exploreStore.loadResults(exploreStore.resultFilters.page),
         runsStore.loadRuns(),
+        savedStore.loadFolders(),
       ])
     } catch (error: unknown) {
       errorMessage.value = getErrorMessage(error) || t('dashboard.errors.refresh_failed')
@@ -98,6 +101,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     dashboard.value = null
     useExploreWorkspaceStore().resetResultsState()
     useRunsWorkspaceStore().resetRunsState()
+    useSavedWorkspaceStore().resetState()
     busyLabel.value = t('dashboard.busy.awaiting_identity')
     errorMessage.value = ''
   }
