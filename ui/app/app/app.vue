@@ -8,6 +8,18 @@ const dashboardStore = useDashboardStore()
 useExploreWorkspaceStore()
 useRunsWorkspaceStore()
 
+watch(
+  () => dashboardStore.totalNewResults,
+  (count) => {
+    if (!('setAppBadge' in navigator)) return
+    if (count > 0) {
+      navigator.setAppBadge(count)
+    } else {
+      navigator.clearAppBadge()
+    }
+  },
+)
+
 onMounted(() => {
   dashboardStore.bootstrap()
 })

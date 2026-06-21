@@ -199,6 +199,12 @@
       }
     },
     "explore": {
+      "new_results_dashboard": {
+        "title": "New results",
+        "all_caught_up": "All caught up — no new results.",
+        "result": "result",
+        "results": "results"
+      },
       "topic_navigator": {
         "title": "Topic navigator",
         "new": "New",

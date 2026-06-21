@@ -30,6 +30,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
   const availableEngines = computed(() => provider.value?.available_engines ?? [])
   const availableLanguages = computed(() => provider.value?.available_languages ?? [])
   const stats = computed(() => dashboard.value?.stats ?? null)
+  const totalNewResults = computed(() => topics.value.reduce((sum, t) => sum + (t.new_results_count ?? 0), 0))
   const hasProviderIssue = computed(
     () => !!provider.value && (!provider.value.searxng_base_url || !provider.value.crawl4ai_enabled),
   )
@@ -175,6 +176,15 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     }
   }
 
+  const focusTopicNewResults = async (topic: SearchTopic) => {
+    const exploreStore = useExploreWorkspaceStore()
+    activeWorkspace.value = 'explore'
+    exploreStore.resultFilters.topic = topic.slug
+    exploreStore.resultFilters.isNewOnly = true
+    exploreStore.resultFilters.page = 1
+    await exploreStore.loadResults(1)
+  }
+
   const editTopicInConfigure = (topic: SearchTopic) => {
     activeWorkspace.value = 'configure'
     useConfigureWorkspaceStore().openTopicEditor(topic)
@@ -229,6 +239,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     availableEngines,
     availableLanguages,
     stats,
+    totalNewResults,
     hasProviderIssue,
     workspaceTabs,
     visibleWorkspaceTabs,
@@ -242,6 +253,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     acknowledgeTopic,
     deleteTopic,
     focusTopicResults,
+    focusTopicNewResults,
     editTopicInConfigure,
     handleLogout,
     bootstrap,

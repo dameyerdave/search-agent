@@ -10,6 +10,7 @@ const exploreStore = useExploreWorkspaceStore()
     class="grid gap-5 xl:grid-cols-[0.92fr_1.48fr]"
   >
     <div class="space-y-5">
+      <NewResultsDashboard />
       <TopicNavigator />
     </div>
 
