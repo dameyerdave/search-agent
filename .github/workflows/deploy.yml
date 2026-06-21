@@ -1,6 +1,5 @@
 # Builds the api/ui images, pushes them to Docker Hub, and deploys the full
 # stack to Kubernetes via the Helm chart in kube/helm/search-agent.
-# A separate job deploys kube-prometheus-stack (monitoring namespace).
 #
 # Required repository secrets:
 #   DOCKERHUB_USERNAME          Docker Hub username/org images are pushed to
@@ -12,7 +11,6 @@
 #   DJANGO_SU_PASSWORD             Password for the seeded Django admin user
 #   CLOUDFLARE_ACCESS_AUDIENCE    Cloudflare Access application audience tag
 #   TUNNEL_TOKEN                  Cloudflare Tunnel connector token
-#   GRAFANA_ADMIN_PASSWORD        Grafana admin password (monitoring stack)
 name: Build and Deploy
 
 on:
@@ -143,43 +141,3 @@ jobs:
             --wait --timeout 10m
 
           rm -f /tmp/secrets-values.yaml
-
-  deploy-monitoring:
-    needs: [deploy]
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up kubeconfig
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-        run: |
-          mkdir -p "$HOME/.kube"
-          echo "$KUBE_CONFIG" | base64 -d > "$HOME/.kube/config"
-          chmod 600 "$HOME/.kube/config"
-
-      - uses: azure/setup-kubectl@v4
-        with:
-          version: latest
-
-      - uses: azure/setup-helm@v4
-        with:
-          version: latest
-
-      - name: Add prometheus-community repo
-        run: |
-          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm repo update
-
-      - name: Deploy kube-prometheus-stack
-        env:
-          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
-        run: |
-          helm upgrade --install kube-prometheus-stack \
-            prometheus-community/kube-prometheus-stack \
-            --namespace monitoring \
-            --create-namespace \
-            -f kube/helm/monitoring/values.yaml \
-            --set grafana.adminPassword="${GRAFANA_ADMIN_PASSWORD}" \
-            --wait --timeout 15m
