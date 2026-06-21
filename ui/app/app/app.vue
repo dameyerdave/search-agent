@@ -32,7 +32,7 @@ onMounted(() => {
       <PullToRefresh />
       <PwaInstallButton />
 
-      <main class="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-5 px-4 pt-5 pb-28 sm:px-6 sm:pb-24 lg:px-8">
+      <main class="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-3 px-3 pt-3 pb-20 sm:gap-5 sm:px-6 sm:pt-5 sm:pb-24 lg:px-8">
         <DashboardHeader />
         <DashboardStatusBanner />
 

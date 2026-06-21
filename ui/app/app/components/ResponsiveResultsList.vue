@@ -13,14 +13,14 @@ const previewText = (result: SearchResult) => result.snippet || result.content |
 
 <template>
   <div class="space-y-3">
-    <div class="space-y-3 md:hidden">
+    <div class="space-y-2 md:hidden">
       <article
         v-for="result in props.results"
         :key="result.id"
-        class="rounded-2xl border border-[var(--line)] bg-black/25 p-4"
+        class="rounded-xl border border-[var(--line)] bg-black/25 p-3"
       >
-        <div class="space-y-3">
-          <div class="flex flex-wrap items-center gap-2">
+        <div class="space-y-2">
+          <div class="flex flex-wrap items-center gap-1.5">
             <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
               {{ t('results.badges.new') }}
             </span>

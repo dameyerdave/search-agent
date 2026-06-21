@@ -299,3 +299,27 @@ textarea {
     transform: none;
   }
 }
+
+@media (max-width: 639px) {
+  .terminal-input,
+  .terminal-select,
+  .terminal-textarea {
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.65rem;
+    font-size: 0.875rem;
+  }
+
+  .terminal-button {
+    padding: 0.45rem 0.8rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+  }
+
+  .data-table th {
+    padding: 0.5rem 0.6rem;
+  }
+
+  .data-table td {
+    padding: 0.55rem 0.6rem;
+  }
+}

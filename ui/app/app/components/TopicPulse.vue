@@ -13,29 +13,29 @@ const nextRunInline = (topic: SearchTopic) => {
 </script>
 
 <template>
-  <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
-    <div class="relative z-10 space-y-4">
-      <p class="mono-heading text-lg tracking-[0.22em] text-white uppercase">
+  <section class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-3 sm:rounded-3xl sm:p-5">
+    <div class="relative z-10 space-y-3">
+      <p class="mono-heading text-sm tracking-[0.22em] text-white uppercase sm:text-lg">
         {{ t('dashboard.runs.topic_pulse.title') }}
       </p>
 
-      <div class="space-y-3">
+      <div class="space-y-2 sm:space-y-3">
         <article
           v-for="topic in dashboardStore.topics"
           :key="topic.slug"
-          class="rounded-2xl border border-[var(--line)] bg-black/25 p-4"
+          class="rounded-xl border border-[var(--line)] bg-black/25 p-3 sm:rounded-2xl sm:p-4"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <p class="text-sm break-words text-white">{{ topic.name }}</p>
-              <p class="mt-2 text-xs text-[var(--muted)]">
+              <p class="mt-1 text-xs text-[var(--muted)]">
                 {{
                   t('dashboard.runs.topic_pulse.checked', {
                     date: formatDate(topic.last_checked_at) ?? t('dashboard.common.never'),
                   })
                 }}
               </p>
-              <p class="mt-2 text-xs text-[var(--muted)]">
+              <p class="mt-1 text-xs text-[var(--muted)]">
                 {{ topic.schedule_description }} /
                 {{ t('dashboard.runs.topic_pulse.next_run_inline', { value: nextRunInline(topic) }) }}
               </p>
@@ -45,28 +45,28 @@ const nextRunInline = (topic: SearchTopic) => {
             </span>
           </div>
 
-          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+          <div class="mt-2.5 grid gap-2 grid-cols-3">
             <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
+              <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('dashboard.explore.topic_navigator.new') }}
               </p>
-              <p class="mt-2 text-xl text-white">{{ topic.new_results_count }}</p>
+              <p class="mt-1 text-lg text-white">{{ topic.new_results_count }}</p>
             </div>
             <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
+              <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('dashboard.configure.topic_matrix.stored') }}
               </p>
-              <p class="mt-2 text-xl text-white">{{ topic.result_count }}</p>
+              <p class="mt-1 text-lg text-white">{{ topic.result_count }}</p>
             </div>
             <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
+              <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('dashboard.runs.topic_pulse.sources_label') }}
               </p>
-              <p class="mt-2 text-xl text-white">{{ topic.source_scopes.length }}</p>
+              <p class="mt-1 text-lg text-white">{{ topic.source_scopes.length }}</p>
             </div>
           </div>
 
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-2.5 flex flex-wrap gap-1.5">
             <button class="terminal-button terminal-button-primary" @click="dashboardStore.focusTopicResults(topic)">
               {{ t('dashboard.common.buttons.inspect') }}
             </button>

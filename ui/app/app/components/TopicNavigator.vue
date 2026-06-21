@@ -16,11 +16,11 @@ const sourceNames = (topic: SearchTopic) =>
 </script>
 
 <template>
-  <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
-    <div class="relative z-10 space-y-4">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+  <section class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-3 sm:rounded-3xl sm:p-5">
+    <div class="relative z-10 space-y-3">
+      <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="mono-heading text-lg tracking-[0.22em] text-white uppercase">
+          <p class="mono-heading text-sm tracking-[0.22em] text-white uppercase sm:text-lg">
             {{ t('dashboard.explore.topic_navigator.title') }}
           </p>
         </div>
@@ -33,15 +33,15 @@ const sourceNames = (topic: SearchTopic) =>
         </button>
       </div>
 
-      <div class="space-y-3">
+      <div class="space-y-2 sm:space-y-3">
         <article
           v-for="topic in dashboardStore.topics"
           :key="topic.slug"
-          class="overflow-hidden rounded-2xl border border-[var(--line)] bg-black/25 p-4"
+          class="overflow-hidden rounded-xl border border-[var(--line)] bg-black/25 p-3 sm:rounded-2xl sm:p-4"
         >
-          <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="flex flex-wrap items-start justify-between gap-2">
             <div class="min-w-0">
-              <div class="flex flex-wrap gap-2">
+              <div class="flex flex-wrap gap-1.5">
                 <span class="pill" :class="topic.enabled ? 'text-[var(--accent)]' : 'text-[var(--muted)]'">
                   {{ topic.enabled ? t('dashboard.common.armed') : t('dashboard.common.paused_badge') }}
                 </span>
@@ -49,27 +49,27 @@ const sourceNames = (topic: SearchTopic) =>
                   {{ t(`dashboard.common.status.${summarizeStatus(topic.last_run_status)}`) }}
                 </span>
               </div>
-              <p class="mt-3 text-lg break-words text-white">{{ topic.name }}</p>
+              <p class="mt-2 text-base break-words text-white">{{ topic.name }}</p>
             </div>
             <div
               class="flex shrink-0 divide-x divide-[var(--line)] overflow-hidden rounded-xl border border-[var(--line)] bg-black/20 text-center"
             >
-              <div class="px-3 py-1.5">
+              <div class="px-2.5 py-1">
                 <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                   {{ t('dashboard.explore.topic_navigator.new') }}
                 </p>
-                <p class="mt-0.5 text-lg text-white">{{ topic.new_results_count }}</p>
+                <p class="mt-0.5 text-base text-white">{{ topic.new_results_count }}</p>
               </div>
-              <div class="px-3 py-1.5">
+              <div class="px-2.5 py-1">
                 <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                   {{ t('dashboard.configure.topic_matrix.stored') }}
                 </p>
-                <p class="mt-0.5 text-lg text-white">{{ topic.result_count }}</p>
+                <p class="mt-0.5 text-base text-white">{{ topic.result_count }}</p>
               </div>
             </div>
           </div>
 
-          <div class="mt-4 space-y-2 text-xs text-[var(--muted)]">
+          <div class="mt-2.5 space-y-1 text-xs text-[var(--muted)]">
             <p>
               {{ t('dashboard.explore.topic_navigator.schedule') }}
               <span class="text-[var(--text)]">{{ topic.schedule_description }}</span>
@@ -90,7 +90,7 @@ const sourceNames = (topic: SearchTopic) =>
             </p>
           </div>
 
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-2.5 flex flex-wrap gap-1.5">
             <button class="terminal-button terminal-button-primary" @click="dashboardStore.focusTopicResults(topic)">
               {{ t('dashboard.common.buttons.inspect') }}
             </button>
@@ -126,7 +126,7 @@ const sourceNames = (topic: SearchTopic) =>
 
         <article
           v-if="dashboardStore.topics.length === 0"
-          class="rounded-2xl border border-[var(--line)] bg-black/25 p-5 text-sm text-[var(--muted)]"
+          class="rounded-xl border border-[var(--line)] bg-black/25 p-4 text-sm text-[var(--muted)] sm:rounded-2xl"
         >
           {{ t('dashboard.explore.topic_navigator.empty') }}
         </article>

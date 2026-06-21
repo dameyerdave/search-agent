@@ -6,20 +6,20 @@ const topicsWithNew = computed(() => dashboardStore.topics.filter((t) => t.new_r
 </script>
 
 <template>
-  <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
-    <div class="relative z-10 space-y-4">
-      <p class="mono-heading text-lg tracking-[0.22em] text-white uppercase">
+  <section class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-3 sm:rounded-3xl sm:p-5">
+    <div class="relative z-10 space-y-3">
+      <p class="mono-heading text-sm tracking-[0.22em] text-white uppercase sm:text-lg">
         {{ t('dashboard.explore.new_results_dashboard.title') }}
         <span v-if="dashboardStore.totalNewResults > 0" class="ml-2 text-[var(--accent)]">
           {{ dashboardStore.totalNewResults }}
         </span>
       </p>
 
-      <div v-if="topicsWithNew.length > 0" class="grid gap-3 sm:grid-cols-2">
+      <div v-if="topicsWithNew.length > 0" class="grid gap-2 sm:gap-3 sm:grid-cols-2">
         <button
           v-for="topic in topicsWithNew"
           :key="topic.slug"
-          class="group flex items-center justify-between gap-3 rounded-2xl border border-[var(--line)] bg-black/25 p-4 text-left transition-colors hover:border-[var(--accent)]/50 hover:bg-black/35"
+          class="group flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-black/25 p-3 text-left transition-colors hover:border-[var(--accent)]/50 hover:bg-black/35 sm:rounded-2xl sm:p-4"
           @click="dashboardStore.focusTopicNewResults(topic)"
         >
           <p class="min-w-0 text-sm break-words text-white">{{ topic.name }}</p>

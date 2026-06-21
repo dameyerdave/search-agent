@@ -17,10 +17,10 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
 </script>
 
 <template>
-  <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
-    <div class="relative z-10 space-y-4">
-      <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-        <p class="mono-heading text-lg tracking-[0.22em] text-white uppercase">
+  <section class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-3 sm:rounded-3xl sm:p-5">
+    <div class="relative z-10 space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <p class="mono-heading text-sm tracking-[0.22em] text-white uppercase sm:text-lg">
           {{ t('dashboard.runs.run_history.title') }}
         </p>
         <div class="flex flex-wrap gap-2">
@@ -30,7 +30,7 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
         </div>
       </div>
 
-      <div class="grid gap-3 md:grid-cols-2">
+      <div class="grid gap-2 md:grid-cols-2 sm:gap-3">
         <label class="space-y-2">
           <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
             {{ t('dashboard.explore.results_terminal.topic_filter') }}
@@ -68,44 +68,44 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
         </span>
       </p>
 
-      <div class="space-y-3">
+      <div class="space-y-2 sm:space-y-3">
         <article
           v-for="run in runsStore.runs"
           :key="run.id"
-          class="rounded-2xl border border-[var(--line)] bg-black/25 p-4"
+          class="rounded-xl border border-[var(--line)] bg-black/25 p-3 sm:rounded-2xl sm:p-4"
         >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-sm tracking-[0.18em] text-[var(--muted)] uppercase">{{ run.topic_name }}</p>
-              <p class="mt-2 text-lg" :class="statusClass(run.status)">
+              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ run.topic_name }}</p>
+              <p class="mt-1 text-base" :class="statusClass(run.status)">
                 {{ t(`dashboard.common.status.${summarizeStatus(run.status)}`) }}
               </p>
             </div>
             <span class="pill" :class="statusClass(run.status)">{{ runStatusLabel(run.status) }}</span>
           </div>
 
-          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+          <div class="mt-2.5 grid gap-2 grid-cols-3">
             <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
+              <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('dashboard.runs.run_history.requests') }}
               </p>
-              <p class="mt-2 text-2xl text-white">{{ run.request_count }}</p>
+              <p class="mt-1 text-xl text-white sm:text-2xl">{{ run.request_count }}</p>
             </div>
             <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
+              <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('dashboard.runs.run_history.new_results') }}
               </p>
-              <p class="mt-2 text-2xl text-white">{{ run.new_results_count }}</p>
+              <p class="mt-1 text-xl text-white sm:text-2xl">{{ run.new_results_count }}</p>
             </div>
             <div>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
+              <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('dashboard.runs.run_history.pages_crawled') }}
               </p>
-              <p class="mt-2 text-2xl text-white">{{ run.pages_crawled }}</p>
+              <p class="mt-1 text-xl text-white sm:text-2xl">{{ run.pages_crawled }}</p>
             </div>
           </div>
 
-          <div class="mt-4 space-y-2 text-sm text-[var(--muted)]">
+          <div class="mt-2 space-y-1 text-xs text-[var(--muted)]">
             <p>{{ t('dashboard.runs.run_history.started', { date: formatRunDate(run.started_at) }) }}</p>
             <p>{{ t('dashboard.runs.run_history.completed', { date: formatRunDate(run.completed_at) }) }}</p>
             <p v-if="run.error_message" class="break-words text-[var(--warn)]">{{ run.error_message }}</p>
@@ -114,7 +114,7 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
 
         <article
           v-if="runsStore.runs.length === 0"
-          class="rounded-2xl border border-[var(--line)] bg-black/25 p-5 text-sm text-[var(--muted)]"
+          class="rounded-xl border border-[var(--line)] bg-black/25 p-4 text-sm text-[var(--muted)] sm:rounded-2xl"
         >
           {{ t('dashboard.runs.run_history.empty') }}
         </article>

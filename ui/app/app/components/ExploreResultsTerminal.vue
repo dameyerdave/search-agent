@@ -9,15 +9,13 @@ const formatResultDate = (value: string | null) => formatDate(value) ?? t('dashb
 </script>
 
 <template>
-  <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
-    <div class="relative z-10 space-y-4">
-      <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p class="mono-heading text-lg tracking-[0.22em] text-white uppercase">
-            {{ t('dashboard.explore.results_terminal.title') }}
-          </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
+  <section class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-3 sm:rounded-3xl sm:p-5">
+    <div class="relative z-10 space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <p class="mono-heading text-sm tracking-[0.22em] text-white uppercase sm:text-lg">
+          {{ t('dashboard.explore.results_terminal.title') }}
+        </p>
+        <div class="flex flex-wrap gap-1.5">
           <button class="terminal-button terminal-button-secondary" @click="exploreStore.clearResultFilters">
             {{ t('dashboard.common.buttons.clear_filters') }}
           </button>

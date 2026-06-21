@@ -7,15 +7,15 @@ const exploreStore = useExploreWorkspaceStore()
 <template>
   <section
     v-if="authStore.isAuthenticated && dashboardStore.activeWorkspace === 'explore'"
-    class="grid gap-5 xl:grid-cols-[0.92fr_1.48fr]"
+    class="grid gap-3 sm:gap-5 xl:grid-cols-[0.92fr_1.48fr]"
   >
-    <div class="min-w-0 space-y-5">
+    <div class="min-w-0 space-y-3 sm:space-y-5">
       <NewResultsDashboard />
       <TopicNavigator />
       <ExploreResultsTerminal />
     </div>
 
-    <div class="min-w-0 space-y-5">
+    <div class="min-w-0 space-y-3 sm:space-y-5">
       <SearchMapWorkspace
         :topic-slug="exploreStore.resultFilters.topic"
         :topic-name="exploreStore.selectedTopic?.name ?? ''"
