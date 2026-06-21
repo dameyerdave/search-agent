@@ -19,6 +19,7 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       enableServiceLinks: false
+      {{- include "search-agent.podTolerations" . | nindent 6 }}
       # api-media is an RWO volume also mounted by the api deployment, so
       # celery-worker must be co-located on the same node to avoid
       # Multi-Attach errors when either deployment is recreated.
@@ -70,6 +71,7 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       enableServiceLinks: false
+      {{- include "search-agent.podTolerations" . | nindent 6 }}
       containers:
         - name: celery-beat
           image: {{ include "search-agent.apiImage" . }}

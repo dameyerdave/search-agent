@@ -39,6 +39,7 @@ spec:
         {{- include "search-agent.componentLabels" (dict "root" $ "component" "envoy") | nindent 8 }}
     spec:
       enableServiceLinks: false
+      {{- include "search-agent.podTolerations" . | nindent 6 }}
       containers:
         - name: envoy
           image: {{ .Values.envoy.image }}

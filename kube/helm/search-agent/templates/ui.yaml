@@ -31,6 +31,7 @@ spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       enableServiceLinks: false
+      {{- include "search-agent.podTolerations" . | nindent 6 }}
       containers:
         - name: ui
           image: {{ include "search-agent.uiImage" . }}
