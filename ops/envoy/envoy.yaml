@@ -42,6 +42,33 @@ static_resources:
                             cluster: api_service
                             timeout: 60s
                         - match:
+                            prefix: /grafana/
+                          route:
+                            cluster: grafana_service
+                            timeout: 60s
+                        - match:
+                            prefix: /grafana
+                          redirect:
+                            path_redirect: /grafana/
+                        - match:
+                            prefix: /prometheus/
+                          route:
+                            cluster: prometheus_service
+                            timeout: 60s
+                        - match:
+                            prefix: /prometheus
+                          redirect:
+                            path_redirect: /prometheus/
+                        - match:
+                            prefix: /alertmanager/
+                          route:
+                            cluster: alertmanager_service
+                            timeout: 60s
+                        - match:
+                            prefix: /alertmanager
+                          redirect:
+                            path_redirect: /alertmanager/
+                        - match:
                             prefix: /
                           route:
                             cluster: ui_service
@@ -78,3 +105,45 @@ static_resources:
                     socket_address:
                       address: api
                       port_value: 5000
+
+    - name: grafana_service
+      connect_timeout: 5s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: grafana_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: kube-prometheus-stack-grafana.monitoring.svc.cluster.local
+                      port_value: 80
+
+    - name: prometheus_service
+      connect_timeout: 5s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: prometheus_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: kube-prometheus-stack-prometheus.monitoring.svc.cluster.local
+                      port_value: 9090
+
+    - name: alertmanager_service
+      connect_timeout: 5s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: alertmanager_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: kube-prometheus-stack-alertmanager.monitoring.svc.cluster.local
+                      port_value: 9093
