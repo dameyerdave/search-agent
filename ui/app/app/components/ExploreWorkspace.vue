@@ -12,6 +12,7 @@ const exploreStore = useExploreWorkspaceStore()
     <div class="min-w-0 space-y-5">
       <NewResultsDashboard />
       <TopicNavigator />
+      <ExploreResultsTerminal />
     </div>
 
     <div class="min-w-0 space-y-5">
@@ -22,7 +23,6 @@ const exploreStore = useExploreWorkspaceStore()
         :kind="exploreStore.resultFilters.kind"
         :is-new-only="exploreStore.resultFilters.isNewOnly"
       />
-      <ExploreResultsTerminal />
     </div>
   </section>
 </template>
