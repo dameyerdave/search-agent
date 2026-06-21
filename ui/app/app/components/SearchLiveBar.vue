@@ -41,12 +41,23 @@ const { t } = useI18n()
       <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
         {{ t('dashboard.search.live_bar.query_label') }}
       </span>
-      <input
-        v-model="searchStore.liveSearchForm.q"
-        class="terminal-input"
-        :placeholder="t('dashboard.search.live_bar.query_placeholder')"
-        @keyup.enter="searchStore.runLiveSearch()"
-      />
+      <div class="relative">
+        <input
+          v-model="searchStore.liveSearchForm.q"
+          class="terminal-input pr-9"
+          :placeholder="t('dashboard.search.live_bar.query_placeholder')"
+          @keyup.enter="searchStore.runLiveSearch()"
+        />
+        <button
+          v-if="searchStore.liveSearchForm.q"
+          type="button"
+          class="absolute inset-y-0 right-3 flex items-center text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+          :aria-label="t('dashboard.search.live_bar.clear_query')"
+          @click="searchStore.liveSearchForm.q = ''"
+        >
+          <UIcon name="i-heroicons-x-mark" class="size-4" />
+        </button>
+      </div>
     </label>
     <button
       class="terminal-button terminal-button-primary h-[46px] self-end px-6"

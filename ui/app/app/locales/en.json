@@ -124,7 +124,8 @@
         "query_label": "Search query",
         "query_placeholder": "\"data platform\" OR \"research data exchange\"",
         "search_now": "Search now",
-        "searching": "Searching..."
+        "searching": "Searching...",
+        "clear_query": "Clear query"
       },
       "advanced": {
         "all_languages": "All languages",
