@@ -1,6 +1,13 @@
 from rest_framework import serializers
 
-from .models import SavedFolder, SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+from .models import PushSubscription, SavedFolder, SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+
+
+class PushSubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PushSubscription
+        fields = ("id", "endpoint", "p256dh", "auth", "created_at")
+        read_only_fields = ("id", "created_at")
 
 
 class SavedFolderSerializer(serializers.ModelSerializer):

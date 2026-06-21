@@ -204,6 +204,7 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     resetDashboardState()
     activeWorkspace.value = 'search'
     useSearchWorkspaceStore().closeLiveSearchSaveDialog()
+    usePushNotificationsStore().resetState()
   }
 
   const bootstrap = async () => {

@@ -46,6 +46,10 @@ CLOUDFLARE_ACCESS_JWKS_CACHE_TTL_S = env.int(
 )
 # Dev-only auto-login, see core.authentication.DevAutoLoginAuthentication.
 DEV_AUTO_LOGIN_EMAIL = env.str("DEV_AUTO_LOGIN_EMAIL", default="").strip() if DEBUG else ""
+# Web Push / VAPID — generate keys with: python -c "from py_vapid import Vapid; v=Vapid(); v.generate_keys(); print(v.private_pem())"
+VAPID_PRIVATE_KEY = env.str("VAPID_PRIVATE_KEY", default="").replace("\\n", "\n")
+VAPID_PUBLIC_KEY = env.str("VAPID_PUBLIC_KEY", default="")
+VAPID_CLAIMS_EMAIL = env.str("VAPID_CLAIMS_EMAIL", default="mailto:admin@localhost")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

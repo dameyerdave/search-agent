@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const dashboardStore = useDashboardStore()
+const pushStore = usePushNotificationsStore()
 
 // Instantiate eagerly during this component's synchronous setup so their
 // useI18n()/useToast() calls run with a valid Vue instance - bootstrap()
@@ -19,9 +20,18 @@ watch(
       navigator.clearAppBadge()
     }
   },
+  { immediate: true },
+)
+
+watch(
+  () => dashboardStore.isBootstrappingAuth,
+  async (booting) => {
+    if (!booting) await pushStore.initForUser()
+  },
 )
 
 onMounted(() => {
+  pushStore.syncState()
   dashboardStore.bootstrap()
 })
 </script>

@@ -301,6 +301,23 @@ class SavedFolder(TimestampedModel):
         return self.name
 
 
+class PushSubscription(TimestampedModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="push_subscriptions",
+    )
+    endpoint = models.TextField(unique=True)
+    p256dh = models.TextField()
+    auth = models.TextField()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user} — {self.endpoint[:60]}"
+
+
 class SearchResult(TimestampedModel):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

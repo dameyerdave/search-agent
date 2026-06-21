@@ -410,6 +410,13 @@
     "no_preview": "No preview available.",
     "empty": "No results match the current filter set."
   },
+  "push": {
+    "enable": "Enable notifications",
+    "enabled": "Notifications on — click to disable",
+    "denied": "Notifications blocked — allow in browser settings",
+    "subscribe_failed": "Failed to subscribe to notifications.",
+    "unsubscribe_failed": "Failed to unsubscribe from notifications."
+  },
   "saved": {
     "folders": {
       "title": "Folders",

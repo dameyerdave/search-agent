@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const authStore = useAuthStore()
 const dashboardStore = useDashboardStore()
+const pushStore = usePushNotificationsStore()
 const { t } = useI18n()
 </script>
 
@@ -15,10 +16,28 @@ const { t } = useI18n()
         </div>
       </div>
 
-      <UPopover
-        :content="{ side: 'bottom', align: 'end', sideOffset: 8 }"
-        :ui="{ content: 'bg-transparent ring-0 shadow-none rounded-2xl' }"
-      >
+      <div class="flex items-center gap-1">
+        <UTooltip
+          v-if="authStore.isAuthenticated && pushStore.isSupported"
+          :text="pushStore.isDenied ? t('push.denied') : pushStore.isSubscribed ? t('push.enabled') : t('push.enable')"
+        >
+          <UButton
+            square
+            variant="ghost"
+            color="neutral"
+            :icon="pushStore.isSubscribed ? 'i-heroicons-bell-solid' : pushStore.isDenied ? 'i-heroicons-bell-slash' : 'i-heroicons-bell'"
+            :class="pushStore.isSubscribed ? 'text-[var(--accent)]' : ''"
+            :loading="pushStore.isRequesting"
+            :disabled="pushStore.isDenied"
+            :aria-label="t('push.enable')"
+            @click="pushStore.isSubscribed ? pushStore.unsubscribe() : pushStore.requestAndSubscribe()"
+          />
+        </UTooltip>
+
+        <UPopover
+          :content="{ side: 'bottom', align: 'end', sideOffset: 8 }"
+          :ui="{ content: 'bg-transparent ring-0 shadow-none rounded-2xl' }"
+        >
         <UButton
           square
           variant="ghost"
@@ -56,6 +75,7 @@ const { t } = useI18n()
           </div>
         </template>
       </UPopover>
+      </div>
     </div>
   </section>
 </template>

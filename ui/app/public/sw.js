@@ -54,6 +54,46 @@ const staleWhileRevalidate = async (request) => {
   return cached || networkResponse
 }
 
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  let data = {}
+  try {
+    data = event.data.json()
+  } catch {
+    data = { title: 'xuno', body: event.data.text() }
+  }
+  const title = data.title || 'xuno'
+  const options = {
+    body: data.body || '',
+    icon: '/pwa/icon-192.png',
+    badge: '/pwa/icon-192.png',
+    tag: 'xuno-new-results',
+    renotify: true,
+    data: { url: '/' },
+  }
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      data.badge && 'setAppBadge' in self.navigator
+        ? self.navigator.setAppBadge(data.badge)
+        : Promise.resolve(),
+    ]),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = event.notification.data?.url || '/'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client) return client.focus()
+      }
+      return self.clients.openWindow(target)
+    }),
+  )
+})
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return

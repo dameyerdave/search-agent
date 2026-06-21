@@ -5,11 +5,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .map_serializers import SearchResultMapResponseSerializer
-from .models import SavedFolder, SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
+from .models import PushSubscription, SavedFolder, SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
 from .querysets import owned_folders, owned_results, owned_runs, owned_source_scopes, owned_topics
 from .tasks import run_topic_search_task
 from .result_locations import build_result_location_map_payload
 from .serializers import (
+    PushSubscriptionSerializer,
     SavedFolderSerializer,
     SearchProviderConfigSerializer,
     SearchResultSerializer,
@@ -239,3 +240,18 @@ class SavedFolderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+
+class PushSubscriptionViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PushSubscription.objects.none()
+    serializer_class = PushSubscriptionSerializer
+    http_method_names = ["get", "post", "delete", "head", "options"]
+
+    def get_queryset(self):
+        return PushSubscription.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        endpoint = self.request.data.get("endpoint", "")
+        PushSubscription.objects.filter(user=self.request.user, endpoint=endpoint).delete()
+        serializer.save(user=self.request.user)

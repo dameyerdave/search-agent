@@ -5,7 +5,7 @@ from django.utils import timezone
 from celery import shared_task
 
 from .models import SearchRun, SearchTopic
-from .services import run_topic_search
+from .services import run_topic_search, send_push_notifications
 
 
 @shared_task
@@ -20,6 +20,11 @@ def run_topic_search_task(topic_id: int, run_id: int | None = None):
             )
         return {"topic_id": topic_id, "status": "skipped", "reason": "topic disabled"}
     run = run_topic_search(topic, run_id=run_id)
+    if run.new_results_count:
+        try:
+            send_push_notifications(topic.owner, topic.name, run.new_results_count)
+        except Exception:  # noqa: BLE001
+            pass
     return {"run_id": run.id, "status": run.status}
 
 

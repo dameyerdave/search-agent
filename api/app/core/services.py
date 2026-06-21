@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
 from .models import (
+    PushSubscription,
     SearchProviderConfig,
     SearchResult,
     SearchRun,
@@ -996,3 +997,38 @@ def run_topic_search(topic: SearchTopic, run_id: int | None = None) -> SearchRun
     )
 
     return run
+
+
+def send_push_notifications(user, topic_name: str, new_count: int) -> None:
+    """Send a Web Push notification to all of a user's registered devices."""
+    if not settings.VAPID_PRIVATE_KEY or not settings.VAPID_PUBLIC_KEY:
+        return
+
+    import json
+
+    try:
+        from pywebpush import WebPushException, webpush
+    except ImportError:
+        return
+
+    subscriptions = list(PushSubscription.objects.filter(user=user))
+    if not subscriptions:
+        return
+
+    label = f"new result{'s' if new_count != 1 else ''}"
+    payload = json.dumps({"title": topic_name, "body": f"{new_count} {label}", "badge": new_count})
+
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info={"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
+                data=payload,
+                vapid_private_key=settings.VAPID_PRIVATE_KEY,
+                vapid_claims={"sub": settings.VAPID_CLAIMS_EMAIL},
+            )
+        except WebPushException as exc:
+            resp = getattr(exc, "response", None)
+            if resp is not None and resp.status_code in (404, 410):
+                sub.delete()
+        except Exception:  # noqa: BLE001
+            pass
