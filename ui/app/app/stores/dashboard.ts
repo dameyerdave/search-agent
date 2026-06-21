@@ -1,5 +1,5 @@
 import { getErrorMessage } from 'errors'
-import type { DashboardPayload, ProviderConfig, SearchTopic } from 'types/search-agent'
+import type { DashboardPayload, ProviderConfig, SearchRun, SearchTopic } from 'types/search-agent'
 
 export const useDashboardStore = defineStore('dashboardStore', () => {
   const api = useSearchAgentApi()
@@ -124,7 +124,12 @@ export const useDashboardStore = defineStore('dashboardStore', () => {
     activeTopicRun.value = topic.slug
     setBusy('dashboard.busy.running_topic', { name: topic.name })
     try {
-      await api.post(`/api/v1/topics/${topic.slug}/run_now/`, {})
+      let run = await api.post<SearchRun>(`/api/v1/topics/${topic.slug}/run_now/`, {})
+      const deadline = Date.now() + 120_000
+      while (run.status === 'running' && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 2500))
+        run = await api.get<SearchRun>(`/api/v1/runs/${run.id}/`)
+      }
       await refreshAll()
       toast.add({ title: t('dashboard.success.topic_run_started', { name: topic.name }), color: 'success' })
     } catch (error: unknown) {

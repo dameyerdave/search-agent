@@ -837,7 +837,7 @@ def apply_crawl_content(result: SearchResult, crawl_payload: dict | None):
     refresh_result_locations(result)
 
 
-def run_topic_search(topic: SearchTopic) -> SearchRun:
+def run_topic_search(topic: SearchTopic, run_id: int | None = None) -> SearchRun:
     topic = SearchTopic.objects.prefetch_related("source_scopes").get(pk=topic.pk)
     source_scopes = list(topic.source_scopes.filter(enabled=True))
     if not source_scopes:
@@ -853,12 +853,17 @@ def run_topic_search(topic: SearchTopic) -> SearchRun:
 
     client = SearxNGClient(settings.SEARXNG_BASE_URL, settings.SEARXNG_TIMEOUT_S)
     extractor = Crawl4AIExtractor()
-    run = SearchRun.objects.create(
-        topic=topic,
-        status=SearchRun.Status.RUNNING,
-        source_scope_count=len(source_scopes),
-        query_snapshot=[],
-    )
+    if run_id:
+        run = SearchRun.objects.get(pk=run_id)
+        run.source_scope_count = len(source_scopes)
+        run.save(update_fields=["source_scope_count"])
+    else:
+        run = SearchRun.objects.create(
+            topic=topic,
+            status=SearchRun.Status.RUNNING,
+            source_scope_count=len(source_scopes),
+            query_snapshot=[],
+        )
 
     topic.last_run_status = SearchTopic.RunStatus.RUNNING
     topic.last_checked_at = timezone.now()

@@ -9,11 +9,17 @@ from .services import run_topic_search
 
 
 @shared_task
-def run_topic_search_task(topic_id: int):
+def run_topic_search_task(topic_id: int, run_id: int | None = None):
     topic = SearchTopic.objects.get(pk=topic_id)
     if not topic.enabled:
+        if run_id:
+            SearchRun.objects.filter(pk=run_id).update(
+                status=SearchRun.Status.FAILED,
+                error_message="Topic is disabled",
+                completed_at=timezone.now(),
+            )
         return {"topic_id": topic_id, "status": "skipped", "reason": "topic disabled"}
-    run = run_topic_search(topic)
+    run = run_topic_search(topic, run_id=run_id)
     return {"run_id": run.id, "status": run.status}
 
 

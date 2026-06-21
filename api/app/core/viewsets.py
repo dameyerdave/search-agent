@@ -4,8 +4,11 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .map_serializers import SearchResultMapResponseSerializer
+from django.utils import timezone
+
 from .models import SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
 from .querysets import owned_results, owned_runs, owned_source_scopes, owned_topics
+from .tasks import run_topic_search_task
 from .result_locations import build_result_location_map_payload
 from .serializers import (
     SearchProviderConfigSerializer,
@@ -44,9 +47,18 @@ class SearchTopicViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def run_now(self, request, slug=None):
         topic = self.get_object()
-        run = run_topic_search(topic)
+        run = SearchRun.objects.create(
+            topic=topic,
+            status=SearchRun.Status.RUNNING,
+            source_scope_count=0,
+            query_snapshot=[],
+        )
+        topic.last_run_status = SearchTopic.RunStatus.RUNNING
+        topic.last_checked_at = timezone.now()
+        topic.save(update_fields=["last_run_status", "last_checked_at", "updated_at"])
+        run_topic_search_task.delay(topic.pk, run.pk)
         serializer = SearchRunSerializer(run)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
     @action(detail=True, methods=["post"])
     def acknowledge(self, request, slug=None):
