@@ -112,6 +112,15 @@ const sourceNames = (topic: SearchTopic) =>
             >
               {{ t('dashboard.common.buttons.ack_new') }}
             </button>
+            <button
+              class="terminal-button terminal-button-secondary"
+              @click="dashboardStore.editTopicInConfigure(topic)"
+            >
+              {{ t('dashboard.common.buttons.edit') }}
+            </button>
+            <button class="terminal-button terminal-button-danger" @click="dashboardStore.deleteTopic(topic)">
+              {{ t('dashboard.common.buttons.delete') }}
+            </button>
           </div>
         </article>
 
