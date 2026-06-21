@@ -24,8 +24,6 @@ kubeProxy:
 # ── Prometheus ──────────────────────────────────────────────────────────────
 prometheus:
   prometheusSpec:
-    externalUrl: "https://app.xuno.ch/prometheus"
-    routePrefix: /prometheus
     retention: 7d
     retentionSize: "4GiB"
     resources:
@@ -110,9 +108,7 @@ grafana:
       tolerationSeconds: 30
   grafana.ini:
     server:
-      domain: "app.xuno.ch"
-      root_url: "%(protocol)s://%(domain)s/grafana"
-      serve_from_sub_path: true
+      root_url: "%(protocol)s://%(domain)s/"
     analytics:
       reporting_enabled: false
       check_for_updates: false
@@ -120,8 +116,6 @@ grafana:
 # ── Alertmanager ─────────────────────────────────────────────────────────────
 alertmanager:
   alertmanagerSpec:
-    externalUrl: "https://app.xuno.ch/alertmanager"
-    routePrefix: /alertmanager
     resources:
       requests:
         cpu: 20m
