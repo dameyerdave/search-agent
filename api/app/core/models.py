@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -301,10 +302,19 @@ class SavedFolder(TimestampedModel):
 
 
 class SearchResult(TimestampedModel):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="bookmarks",
+        null=True,
+        blank=True,
+    )
     topic = models.ForeignKey(
         SearchTopic,
         on_delete=models.CASCADE,
         related_name="results",
+        null=True,
+        blank=True,
     )
     source_scope = models.ForeignKey(
         SourceScope,
@@ -350,8 +360,14 @@ class SearchResult(TimestampedModel):
         constraints = [
             models.UniqueConstraint(
                 fields=["topic", "normalized_url"],
+                condition=Q(topic__isnull=False),
                 name="unique_result_per_topic_url",
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["owner", "normalized_url"],
+                condition=Q(topic__isnull=True),
+                name="unique_bookmark_per_owner_url",
+            ),
         ]
         indexes = [
             models.Index(fields=["topic", "is_new"]),

@@ -51,15 +51,33 @@ useInfiniteScroll(window, () => searchStore.loadMoreLiveSearchResults(), {
               </a>
               <p class="break-words text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ result.domain }}</p>
             </div>
-            <div class="text-left text-xs text-[var(--muted)] sm:text-right">
-              <p>
-                {{
-                  t('results.meta.published', { date: formatDate(result.published_at) ?? t('results.not_available') })
-                }}
-              </p>
-              <p class="mt-2">
-                {{ t('dashboard.search.live_stream.score', { score: result.score ?? t('results.not_available') }) }}
-              </p>
+            <div class="flex items-start gap-3">
+              <div class="text-left text-xs text-[var(--muted)] sm:text-right">
+                <p>
+                  {{
+                    t('results.meta.published', { date: formatDate(result.published_at) ?? t('results.not_available') })
+                  }}
+                </p>
+                <p class="mt-2">
+                  {{ t('dashboard.search.live_stream.score', { score: result.score ?? t('results.not_available') }) }}
+                </p>
+              </div>
+              <button
+                v-if="!searchStore.savedLiveResults.has(result.url)"
+                class="terminal-button terminal-button-secondary shrink-0 p-1.5"
+                :title="t('results.save.button')"
+                @click="searchStore.saveLiveResult(result)"
+              >
+                <UIcon name="i-heroicons-bookmark" class="size-4" />
+              </button>
+              <button
+                v-else
+                class="terminal-button terminal-button-secondary shrink-0 p-1.5 text-[var(--accent)]"
+                :title="t('results.save.unsave')"
+                @click="searchStore.unsaveLiveResult(result.url)"
+              >
+                <UIcon name="i-heroicons-bookmark-solid" class="size-4" />
+              </button>
             </div>
           </div>
           <p class="mt-3 text-sm leading-6 text-[var(--muted)]">

@@ -32,7 +32,7 @@ def owned_results(user):
     if not user.is_authenticated:
         return SearchResult.objects.none()
     return SearchResult.objects.select_related("topic", "source_scope", "last_run", "folder").filter(
-        topic__owner=user
+        Q(topic__owner=user) | Q(owner=user, topic__isnull=True)
     )
 
 

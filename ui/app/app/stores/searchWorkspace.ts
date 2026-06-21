@@ -1,5 +1,5 @@
 import { getErrorMessage } from 'errors'
-import type { LiveSearxResponse, SearchTopic, SourceScope } from 'types/search-agent'
+import type { LiveSearxResponse, LiveSearxResult, SearchResult, SearchTopic, SourceScope } from 'types/search-agent'
 import {
   cleanSearchLabel,
   deriveLookbackDays,
@@ -48,6 +48,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
 
   const liveSearchForm = reactive(emptyLiveSearchForm())
   const liveSearchSaveForm = reactive(emptyLiveSearchSaveForm())
+  const savedLiveResults = ref<Map<string, SearchResult>>(new Map())
   const liveSearchResponse = ref<LiveSearxResponse | null>(null)
   const liveSearchPage = ref(1)
   const liveSearchHasMore = ref(false)
@@ -295,9 +296,39 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
     }
   }
 
+  const saveLiveResult = async (result: LiveSearxResult) => {
+    try {
+      const saved = await api.post<SearchResult>('/api/v1/results/save_live/', {
+        url: result.url,
+        title: result.title,
+        domain: result.domain,
+        snippet: result.snippet,
+      })
+      savedLiveResults.value = new Map(savedLiveResults.value).set(result.url, saved)
+      await useSavedWorkspaceStore().loadFolders()
+    } catch (error: unknown) {
+      toast.add({ title: getErrorMessage(error) || t('results.save_error'), color: 'error' })
+    }
+  }
+
+  const unsaveLiveResult = async (url: string) => {
+    const saved = savedLiveResults.value.get(url)
+    if (!saved) return
+    try {
+      await api.post(`/api/v1/results/${saved.id}/unsave/`, {})
+      const next = new Map(savedLiveResults.value)
+      next.delete(url)
+      savedLiveResults.value = next
+      await useSavedWorkspaceStore().loadFolders()
+    } catch (error: unknown) {
+      toast.add({ title: getErrorMessage(error) || t('results.unsave_error'), color: 'error' })
+    }
+  }
+
   return {
     liveSearchForm,
     liveSearchSaveForm,
+    savedLiveResults,
     liveSearchResponse,
     liveSearchPage,
     liveSearchHasMore,
@@ -327,5 +358,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
     clearLiveSearchEngines,
     selectAllLiveSearchLanguages,
     clearLiveSearchLanguages,
+    saveLiveResult,
+    unsaveLiveResult,
   }
 })

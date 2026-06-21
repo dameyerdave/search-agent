@@ -17,7 +17,7 @@ from .serializers import (
     SearchTopicSerializer,
     SourceScopeSerializer,
 )
-from .services import run_topic_search
+from .services import normalize_url, run_topic_search
 
 
 def _resolve_folder(request, user):
@@ -194,6 +194,38 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
         folder = _resolve_folder(request, request.user)
         result.folder = folder
         result.save(update_fields=["folder", "updated_at"])
+        return Response(SearchResultSerializer(result, context={"request": request}).data)
+
+    @action(detail=False, methods=["post"], url_path="save_live")
+    def save_live(self, request):
+        url = (request.data.get("url") or "").strip()
+        if not url:
+            return Response({"error": "url required"}, status=status.HTTP_400_BAD_REQUEST)
+        title = (request.data.get("title") or "").strip() or url
+        domain = (request.data.get("domain") or "").strip()
+        snippet = (request.data.get("snippet") or "").strip()
+        folder = _resolve_folder(request, request.user)
+        normed = normalize_url(url)
+        result, _ = SearchResult.objects.get_or_create(
+            owner=request.user,
+            normalized_url=normed,
+            topic=None,
+            defaults={
+                "title": title,
+                "url": url,
+                "domain": domain,
+                "snippet": snippet,
+                "is_saved": True,
+                "saved_title": title,
+                "folder": folder,
+                "is_new": False,
+            },
+        )
+        if not result.is_saved:
+            result.is_saved = True
+            result.saved_title = title
+            result.folder = folder
+            result.save(update_fields=["is_saved", "saved_title", "folder", "updated_at"])
         return Response(SearchResultSerializer(result, context={"request": request}).data)
 
 
