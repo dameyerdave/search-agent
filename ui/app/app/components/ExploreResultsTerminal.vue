@@ -65,7 +65,12 @@ const formatResultDate = (value: string | null) => formatDate(value) ?? t('dashb
         {{ t('dashboard.explore.results_terminal.new_only') }}
       </label>
 
-      <ResponsiveResultsList :results="exploreStore.results" :format-date="formatResultDate" />
+      <ResponsiveResultsList
+        :results="exploreStore.results"
+        :format-date="formatResultDate"
+        @save="exploreStore.saveResult"
+        @unsave="exploreStore.unsaveResult"
+      />
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p class="text-sm text-[var(--muted)]">

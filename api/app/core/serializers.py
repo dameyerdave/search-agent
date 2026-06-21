@@ -426,6 +426,8 @@ class SearchResultSerializer(serializers.ModelSerializer):
             "first_seen_at",
             "last_seen_at",
             "is_new",
+            "is_saved",
+            "saved_title",
             "created_at",
             "updated_at",
         )

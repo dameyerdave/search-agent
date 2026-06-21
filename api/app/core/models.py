@@ -314,6 +314,8 @@ class SearchResult(TimestampedModel):
     first_seen_at = models.DateTimeField(default=timezone.now)
     last_seen_at = models.DateTimeField(default=timezone.now)
     is_new = models.BooleanField(default=True)
+    is_saved = models.BooleanField(default=False, db_index=True)
+    saved_title = models.CharField(max_length=500, blank=True)
     location_signature = models.CharField(max_length=40, blank=True)
     raw_result = models.JSONField(default=dict, blank=True)
 

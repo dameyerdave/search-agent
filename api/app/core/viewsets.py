@@ -142,3 +142,20 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(topic__slug=topic_slug)
         updated = queryset.update(is_new=False)
         return Response({"acknowledged": updated})
+
+    @action(detail=True, methods=["post"])
+    def save(self, request, pk=None):
+        result = self.get_object()
+        title = (request.data.get("title") or "").strip() or result.title
+        result.is_saved = True
+        result.saved_title = title
+        result.save(update_fields=["is_saved", "saved_title", "updated_at"])
+        return Response(SearchResultSerializer(result, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"])
+    def unsave(self, request, pk=None):
+        result = self.get_object()
+        result.is_saved = False
+        result.saved_title = ""
+        result.save(update_fields=["is_saved", "saved_title", "updated_at"])
+        return Response(SearchResultSerializer(result, context={"request": request}).data)

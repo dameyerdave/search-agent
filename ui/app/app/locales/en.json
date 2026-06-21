@@ -387,12 +387,22 @@
       "when": "When"
     },
     "badges": {
-      "new": "new"
+      "new": "new",
+      "saved": "saved"
     },
     "meta": {
       "seen": "Seen {date}",
       "published": "Published {date}"
     },
+    "save": {
+      "button": "Save",
+      "unsave": "Remove",
+      "title_label": "Title",
+      "confirm": "Save result"
+    },
+    "save_success": "Result saved",
+    "save_error": "Failed to save result",
+    "unsave_error": "Failed to remove saved result",
     "not_available": "n/a",
     "no_preview": "No preview available.",
     "empty": "No results match the current filter set."

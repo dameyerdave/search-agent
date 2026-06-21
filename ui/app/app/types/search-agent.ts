@@ -122,6 +122,8 @@ export interface SearchResult {
   first_seen_at: string
   last_seen_at: string
   is_new: boolean
+  is_saved: boolean
+  saved_title: string
   created_at: string
   updated_at: string
 }

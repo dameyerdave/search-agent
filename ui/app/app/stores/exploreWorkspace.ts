@@ -62,6 +62,31 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
     await dashboardStore.refreshAll()
   }
 
+  const saveResult = async (id: number, title: string) => {
+    try {
+      const updated = await api.post<SearchResult>(`/api/v1/results/${id}/save/`, { title })
+      if (resultsPage.value) {
+        const idx = resultsPage.value.results.findIndex((r) => r.id === id)
+        if (idx !== -1) resultsPage.value.results[idx] = updated
+      }
+      toast.add({ title: t('results.save_success'), color: 'success' })
+    } catch (error: unknown) {
+      toast.add({ title: getErrorMessage(error) || t('results.save_error'), color: 'error' })
+    }
+  }
+
+  const unsaveResult = async (id: number) => {
+    try {
+      const updated = await api.post<SearchResult>(`/api/v1/results/${id}/unsave/`, {})
+      if (resultsPage.value) {
+        const idx = resultsPage.value.results.findIndex((r) => r.id === id)
+        if (idx !== -1) resultsPage.value.results[idx] = updated
+      }
+    } catch (error: unknown) {
+      toast.add({ title: getErrorMessage(error) || t('results.unsave_error'), color: 'error' })
+    }
+  }
+
   const resetResultsState = () => {
     resultsPage.value = null
   }
@@ -85,6 +110,8 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
     loadResults,
     clearResultFilters,
     acknowledgeVisibleResults,
+    saveResult,
+    unsaveResult,
     resetResultsState,
   }
 })
