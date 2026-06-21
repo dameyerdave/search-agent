@@ -44,12 +44,12 @@ useInfiniteScroll(window, () => searchStore.loadMoreLiveSearchResults(), {
                 :href="result.url"
                 target="_blank"
                 rel="noreferrer"
-                class="text-lg text-white hover:text-[var(--accent)]"
+                class="break-words text-lg text-white hover:text-[var(--accent)]"
               >
                 {{ result.title }}
                 <span class="sr-only">{{ t('dashboard.common.opens_new_tab') }}</span>
               </a>
-              <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ result.domain }}</p>
+              <p class="break-words text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ result.domain }}</p>
             </div>
             <div class="text-left text-xs text-[var(--muted)] sm:text-right">
               <p>

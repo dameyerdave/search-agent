@@ -75,7 +75,7 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
           class="rounded-2xl border border-[var(--line)] bg-black/25 p-4"
         >
           <div class="flex items-start justify-between gap-3">
-            <div>
+            <div class="min-w-0">
               <p class="text-sm tracking-[0.18em] text-[var(--muted)] uppercase">{{ run.topic_name }}</p>
               <p class="mt-2 text-lg" :class="statusClass(run.status)">
                 {{ t(`dashboard.common.status.${summarizeStatus(run.status)}`) }}
@@ -108,7 +108,7 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
           <div class="mt-4 space-y-2 text-sm text-[var(--muted)]">
             <p>{{ t('dashboard.runs.run_history.started', { date: formatRunDate(run.started_at) }) }}</p>
             <p>{{ t('dashboard.runs.run_history.completed', { date: formatRunDate(run.completed_at) }) }}</p>
-            <p v-if="run.error_message" class="text-[var(--warn)]">{{ run.error_message }}</p>
+            <p v-if="run.error_message" class="break-words text-[var(--warn)]">{{ run.error_message }}</p>
           </div>
         </article>
 

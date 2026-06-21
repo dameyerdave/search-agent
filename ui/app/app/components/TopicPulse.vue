@@ -26,8 +26,8 @@ const nextRunInline = (topic: SearchTopic) => {
           class="rounded-2xl border border-[var(--line)] bg-black/25 p-4"
         >
           <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm text-white">{{ topic.name }}</p>
+            <div class="min-w-0">
+              <p class="text-sm break-words text-white">{{ topic.name }}</p>
               <p class="mt-2 text-xs text-[var(--muted)]">
                 {{
                   t('dashboard.runs.topic_pulse.checked', {
