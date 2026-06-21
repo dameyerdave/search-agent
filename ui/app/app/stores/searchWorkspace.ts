@@ -184,8 +184,10 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
         extra_params: parseExtraParams(liveSearchForm.extraParams),
       })
 
+      const existingUrls = new Set(shouldAppend ? liveSearchResults.value.map((r) => r.url) : [])
+      const freshResults = response.results.filter((r) => !existingUrls.has(r.url))
       const combinedResults = sortLiveSearchResults(
-        [...(shouldAppend ? liveSearchResults.value : []), ...response.results],
+        [...(shouldAppend ? liveSearchResults.value : []), ...freshResults],
         response.result_order,
       ).map((result, index) => ({
         ...result,
@@ -198,7 +200,7 @@ export const useSearchWorkspaceStore = defineStore('searchWorkspaceStore', () =>
         results: combinedResults,
       }
       liveSearchPage.value = nextPage
-      liveSearchHasMore.value = response.results.length === LIVE_SEARCH_PAGE_SIZE
+      liveSearchHasMore.value = freshResults.length > 0 && response.results.length >= LIVE_SEARCH_PAGE_SIZE
 
       ensureLiveSearchDraftDefaults()
       dashboardStore.setBusy(
