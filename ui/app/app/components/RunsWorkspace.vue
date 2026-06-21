@@ -9,7 +9,7 @@ const dashboardStore = useDashboardStore()
 
     <section class="grid gap-5 xl:grid-cols-[1.35fr_0.95fr]">
       <RunHistory />
-      <div class="space-y-5">
+      <div class="min-w-0 space-y-5">
         <TopicPulse />
       </div>
     </section>

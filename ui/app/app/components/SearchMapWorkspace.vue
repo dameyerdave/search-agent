@@ -131,7 +131,7 @@ const mapEmptyLabel = computed(() => (hasSelectedTopic.value ? t('map.empty_topi
       </div>
     </section>
 
-    <div class="space-y-5">
+    <div class="min-w-0 space-y-5">
       <section class="terminal-panel relative overflow-hidden rounded-[1.5rem] p-5">
         <div class="relative z-10 space-y-4">
           <div>

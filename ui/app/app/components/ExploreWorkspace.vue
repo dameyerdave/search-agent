@@ -9,12 +9,12 @@ const exploreStore = useExploreWorkspaceStore()
     v-if="authStore.isAuthenticated && dashboardStore.activeWorkspace === 'explore'"
     class="grid gap-5 xl:grid-cols-[0.92fr_1.48fr]"
   >
-    <div class="space-y-5">
+    <div class="min-w-0 space-y-5">
       <NewResultsDashboard />
       <TopicNavigator />
     </div>
 
-    <div class="space-y-5">
+    <div class="min-w-0 space-y-5">
       <SearchMapWorkspace
         :topic-slug="exploreStore.resultFilters.topic"
         :topic-name="exploreStore.selectedTopic?.name ?? ''"
