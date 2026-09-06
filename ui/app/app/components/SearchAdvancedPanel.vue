@@ -113,17 +113,21 @@ const languageOptions = computed(() =>
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
-            class="terminal-button terminal-button-secondary"
+            class="terminal-button terminal-button-secondary p-2"
+            :title="t('dashboard.common.buttons.select_all')"
+            :aria-label="t('dashboard.common.buttons.select_all')"
             @click="searchStore.selectAllLiveSearchLanguages"
           >
-            {{ t('dashboard.common.buttons.select_all') }}
+            <UIcon name="i-heroicons-check-circle" class="size-4" />
           </button>
           <button
             type="button"
-            class="terminal-button terminal-button-secondary"
+            class="terminal-button terminal-button-secondary p-2"
+            :title="t('dashboard.common.buttons.clear')"
+            :aria-label="t('dashboard.common.buttons.clear')"
             @click="searchStore.clearLiveSearchLanguages"
           >
-            {{ t('dashboard.common.buttons.clear') }}
+            <UIcon name="i-heroicons-x-mark" class="size-4" />
           </button>
         </div>
       </div>
@@ -148,17 +152,21 @@ const languageOptions = computed(() =>
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
-            class="terminal-button terminal-button-secondary"
+            class="terminal-button terminal-button-secondary p-2"
+            :title="t('dashboard.common.buttons.select_all')"
+            :aria-label="t('dashboard.common.buttons.select_all')"
             @click="searchStore.selectAllLiveSearchCategories"
           >
-            {{ t('dashboard.common.buttons.select_all') }}
+            <UIcon name="i-heroicons-check-circle" class="size-4" />
           </button>
           <button
             type="button"
-            class="terminal-button terminal-button-secondary"
+            class="terminal-button terminal-button-secondary p-2"
+            :title="t('dashboard.common.buttons.clear')"
+            :aria-label="t('dashboard.common.buttons.clear')"
             @click="searchStore.clearLiveSearchCategories"
           >
-            {{ t('dashboard.common.buttons.clear') }}
+            <UIcon name="i-heroicons-x-mark" class="size-4" />
           </button>
         </div>
       </div>
@@ -183,17 +191,21 @@ const languageOptions = computed(() =>
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
-            class="terminal-button terminal-button-secondary"
+            class="terminal-button terminal-button-secondary p-2"
+            :title="t('dashboard.common.buttons.select_all')"
+            :aria-label="t('dashboard.common.buttons.select_all')"
             @click="searchStore.selectAllLiveSearchEngines"
           >
-            {{ t('dashboard.common.buttons.select_all') }}
+            <UIcon name="i-heroicons-check-circle" class="size-4" />
           </button>
           <button
             type="button"
-            class="terminal-button terminal-button-secondary"
+            class="terminal-button terminal-button-secondary p-2"
+            :title="t('dashboard.common.buttons.clear')"
+            :aria-label="t('dashboard.common.buttons.clear')"
             @click="searchStore.clearLiveSearchEngines"
           >
-            {{ t('dashboard.common.buttons.clear') }}
+            <UIcon name="i-heroicons-x-mark" class="size-4" />
           </button>
         </div>
       </div>

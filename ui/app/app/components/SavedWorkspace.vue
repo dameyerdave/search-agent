@@ -122,14 +122,21 @@ const submitMove = async () => {
                   @keyup.enter="submitRenameFolder(folder)"
                   @keyup.escape="savedStore.cancelEditFolder()"
                 />
-                <button class="terminal-button terminal-button-primary text-xs" @click="submitRenameFolder(folder)">
-                  {{ t('dashboard.common.buttons.save') }}
+                <button
+                  class="terminal-button terminal-button-primary p-2"
+                  :title="t('dashboard.common.buttons.save')"
+                  :aria-label="t('dashboard.common.buttons.save')"
+                  @click="submitRenameFolder(folder)"
+                >
+                  <UIcon name="i-heroicons-check" class="size-4" />
                 </button>
                 <button
-                  class="terminal-button terminal-button-secondary text-xs"
+                  class="terminal-button terminal-button-secondary p-2"
+                  :title="t('dashboard.common.buttons.cancel')"
+                  :aria-label="t('dashboard.common.buttons.cancel')"
                   @click="savedStore.cancelEditFolder()"
                 >
-                  ✕
+                  <UIcon name="i-heroicons-x-mark" class="size-4" />
                 </button>
               </div>
 
@@ -141,11 +148,21 @@ const submitMove = async () => {
                 <span class="min-w-0 flex-1 text-xs text-[#ffd8d8]">{{
                   t('saved.folders.confirm_delete', { name: folder.name })
                 }}</span>
-                <button class="terminal-button terminal-button-danger text-xs" @click="confirmDelete(folder.id)">
-                  {{ t('dashboard.common.buttons.delete') }}
+                <button
+                  class="terminal-button terminal-button-danger p-2"
+                  :title="t('dashboard.common.buttons.delete')"
+                  :aria-label="t('dashboard.common.buttons.delete')"
+                  @click="confirmDelete(folder.id)"
+                >
+                  <UIcon name="i-heroicons-trash" class="size-4" />
                 </button>
-                <button class="terminal-button terminal-button-secondary text-xs" @click="confirmDeleteFolderId = null">
-                  ✕
+                <button
+                  class="terminal-button terminal-button-secondary p-2"
+                  :title="t('dashboard.common.buttons.cancel')"
+                  :aria-label="t('dashboard.common.buttons.cancel')"
+                  @click="confirmDeleteFolderId = null"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="size-4" />
                 </button>
               </div>
 
@@ -201,11 +218,20 @@ const submitMove = async () => {
               @keyup.enter="submitCreateFolder"
               @keyup.escape="savedStore.isCreatingFolder = false"
             />
-            <button class="terminal-button terminal-button-primary text-xs" @click="submitCreateFolder">
-              {{ t('dashboard.common.buttons.save') }}
+            <button
+              class="terminal-button terminal-button-primary p-2"
+              :title="t('dashboard.common.buttons.save')"
+              :aria-label="t('dashboard.common.buttons.save')"
+              @click="submitCreateFolder"
+            >
+              <UIcon name="i-heroicons-check" class="size-4" />
             </button>
           </div>
-          <button v-else class="terminal-button terminal-button-secondary w-full text-sm" @click="openCreateFolder">
+          <button
+            v-else
+            class="terminal-button terminal-button-secondary flex w-full items-center justify-center gap-2 text-sm"
+            @click="openCreateFolder"
+          >
             <UIcon name="i-heroicons-plus" class="size-3.5" />
             {{ t('saved.folders.new_folder') }}
           </button>
@@ -270,23 +296,28 @@ const submitMove = async () => {
               </div>
               <div class="mt-2 flex flex-wrap justify-end gap-1.5">
                 <button
-                  class="terminal-button terminal-button-secondary text-xs"
+                  class="terminal-button terminal-button-secondary p-2"
                   :title="t('saved.results.move')"
+                  :aria-label="t('saved.results.move')"
                   @click="startMove(result.id)"
                 >
-                  <UIcon name="i-heroicons-arrow-right-circle" class="size-3.5" />
-                  {{ t('saved.results.move') }}
-                </button>
-                <button class="terminal-button terminal-button-secondary text-xs" @click="followResult(result)">
-                  <UIcon name="i-heroicons-signal" class="size-3.5" />
-                  {{ t('results.follow.button') }}
+                  <UIcon name="i-heroicons-arrow-right-circle" class="size-4" />
                 </button>
                 <button
-                  class="terminal-button terminal-button-danger text-xs"
+                  class="terminal-button terminal-button-secondary p-2"
+                  :title="t('results.follow.button')"
+                  :aria-label="t('results.follow.button')"
+                  @click="followResult(result)"
+                >
+                  <UIcon name="i-heroicons-signal" class="size-4" />
+                </button>
+                <button
+                  class="terminal-button terminal-button-danger p-2"
                   :title="t('saved.results.remove')"
+                  :aria-label="t('saved.results.remove')"
                   @click="savedStore.unsaveResult(result.id)"
                 >
-                  <UIcon name="i-heroicons-trash" class="size-3.5" />
+                  <UIcon name="i-heroicons-trash" class="size-4" />
                 </button>
               </div>
 
@@ -308,10 +339,18 @@ const submitMove = async () => {
                   :placeholder="t('saved.folders.new_folder_placeholder')"
                 />
                 <div class="flex gap-2">
-                  <button class="terminal-button terminal-button-primary text-xs" @click="submitMove">
+                  <button
+                    class="terminal-button terminal-button-primary flex items-center gap-1.5 text-xs"
+                    @click="submitMove"
+                  >
+                    <UIcon name="i-heroicons-check" class="size-3.5" />
                     {{ t('saved.results.confirm_move') }}
                   </button>
-                  <button class="terminal-button terminal-button-secondary text-xs" @click="movingResultId = null">
+                  <button
+                    class="terminal-button terminal-button-secondary flex items-center gap-1.5 text-xs"
+                    @click="movingResultId = null"
+                  >
+                    <UIcon name="i-heroicons-x-mark" class="size-3.5" />
                     {{ t('dashboard.common.buttons.cancel') }}
                   </button>
                 </div>
@@ -335,7 +374,11 @@ const submitMove = async () => {
             v-else-if="savedStore.canLoadMoreFolderResults && savedStore.autoLoadCapReachedSaved"
             class="flex justify-center py-2"
           >
-            <button class="terminal-button terminal-button-secondary" @click="savedStore.loadMoreFolderResults">
+            <button
+              class="terminal-button terminal-button-secondary flex items-center gap-1.5"
+              @click="savedStore.loadMoreFolderResults"
+            >
+              <UIcon name="i-heroicons-chevron-down" class="size-4" />
               {{ t('dashboard.common.buttons.load_more') }}
             </button>
           </div>

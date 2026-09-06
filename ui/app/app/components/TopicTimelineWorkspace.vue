@@ -74,10 +74,11 @@ const ordinalLabel = (n: number) => {
         </div>
 
         <button
-          class="terminal-button terminal-button-secondary"
+          class="terminal-button terminal-button-secondary flex items-center gap-2"
           :disabled="!hasSelectedTopic || isGenerating"
           @click="generateTimeline"
         >
+          <UIcon name="i-heroicons-sparkles" class="size-4" :class="{ 'animate-pulse': isGenerating }" />
           {{ isGenerating ? t('timeline.controls.generating') : t('timeline.controls.generate') }}
         </button>
       </div>

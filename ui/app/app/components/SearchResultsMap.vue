@@ -317,10 +317,12 @@ onUnmounted(() => {
       </button>
       <button
         type="button"
-        class="terminal-button terminal-button-secondary min-h-11 px-4 py-2 text-[11px]"
+        class="terminal-button terminal-button-secondary flex h-11 w-11 items-center justify-center p-0"
+        :title="t('map.controls.fit')"
+        :aria-label="t('map.controls.fit')"
         @click.stop="fitToMarkers"
       >
-        {{ t('map.controls.fit') }}
+        <UIcon name="i-heroicons-viewfinder-circle" class="size-4" />
       </button>
     </div>
 

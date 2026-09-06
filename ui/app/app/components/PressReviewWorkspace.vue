@@ -37,14 +37,21 @@ useInfiniteScroll(window, () => pressReviewStore.loadMoreResults(), {
               {{ t('press_review.new_count', { count: pressReviewStore.newCount }) }}
             </span>
             <button
-              class="terminal-button terminal-button-secondary"
+              class="terminal-button terminal-button-secondary p-2.5"
               :disabled="pressReviewStore.newCount === 0"
+              :title="t('press_review.acknowledge_all')"
+              :aria-label="t('press_review.acknowledge_all')"
               @click="pressReviewStore.acknowledgeAll"
             >
-              {{ t('press_review.acknowledge_all') }}
+              <UIcon name="i-heroicons-check-circle" class="size-4" />
             </button>
-            <button class="terminal-button terminal-button-secondary" @click="pressReviewStore.loadResults(1)">
-              {{ t('dashboard.common.buttons.refresh') }}
+            <button
+              class="terminal-button terminal-button-secondary p-2.5"
+              :title="t('dashboard.common.buttons.refresh')"
+              :aria-label="t('dashboard.common.buttons.refresh')"
+              @click="pressReviewStore.loadResults(1)"
+            >
+              <UIcon name="i-heroicons-arrow-path" class="size-4" />
             </button>
           </div>
         </div>
@@ -95,9 +102,13 @@ useInfiniteScroll(window, () => pressReviewStore.loadMoreResults(), {
             <p class="text-[11px] text-[var(--muted)]">
               {{ t('results.meta.published', { date: formatResultDate(result.published_at) }) }}
             </p>
-            <button class="terminal-button terminal-button-secondary text-xs" @click="followResult(result)">
+            <button
+              class="terminal-button terminal-button-secondary p-2"
+              :title="t('results.follow.button')"
+              :aria-label="t('results.follow.button')"
+              @click="followResult(result)"
+            >
               <UIcon name="i-heroicons-signal" class="size-3.5" />
-              {{ t('results.follow.button') }}
             </button>
           </div>
         </div>
@@ -110,9 +121,10 @@ useInfiniteScroll(window, () => pressReviewStore.loadMoreResults(), {
       </p>
       <button
         v-else-if="pressReviewStore.canLoadMore && pressReviewStore.autoLoadCapReached"
-        class="terminal-button terminal-button-secondary"
+        class="terminal-button terminal-button-secondary flex items-center gap-1.5"
         @click="pressReviewStore.loadMoreResults"
       >
+        <UIcon name="i-heroicons-chevron-down" class="size-4" />
         {{ t('dashboard.common.buttons.load_more') }}
       </button>
     </div>

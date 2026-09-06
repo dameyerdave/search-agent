@@ -22,11 +22,21 @@ useInfiniteScroll(window, () => exploreStore.loadMoreResults(), {
           {{ t('dashboard.explore.results_terminal.title') }}
         </p>
         <div class="flex flex-wrap gap-1.5">
-          <button class="terminal-button terminal-button-secondary" @click="exploreStore.clearResultFilters">
-            {{ t('dashboard.common.buttons.clear_filters') }}
+          <button
+            class="terminal-button terminal-button-secondary p-2.5"
+            :title="t('dashboard.common.buttons.clear_filters')"
+            :aria-label="t('dashboard.common.buttons.clear_filters')"
+            @click="exploreStore.clearResultFilters"
+          >
+            <UIcon name="i-heroicons-x-circle" class="size-4" />
           </button>
-          <button class="terminal-button terminal-button-secondary" @click="exploreStore.acknowledgeVisibleResults">
-            {{ t('dashboard.explore.results_terminal.ack_visible') }}
+          <button
+            class="terminal-button terminal-button-secondary p-2.5"
+            :title="t('dashboard.explore.results_terminal.ack_visible')"
+            :aria-label="t('dashboard.explore.results_terminal.ack_visible')"
+            @click="exploreStore.acknowledgeVisibleResults"
+          >
+            <UIcon name="i-heroicons-check-circle" class="size-4" />
           </button>
         </div>
       </div>
@@ -99,9 +109,10 @@ useInfiniteScroll(window, () => exploreStore.loadMoreResults(), {
         </p>
         <button
           v-else-if="exploreStore.canLoadMore && exploreStore.autoLoadCapReached"
-          class="terminal-button terminal-button-secondary"
+          class="terminal-button terminal-button-secondary flex items-center gap-1.5"
           @click="exploreStore.loadMoreResults"
         >
+          <UIcon name="i-heroicons-chevron-down" class="size-4" />
           {{ t('dashboard.common.buttons.load_more') }}
         </button>
       </div>

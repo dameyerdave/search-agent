@@ -31,8 +31,13 @@ const categoryLabel = (source: SourceScope) => {
               : t('dashboard.configure.topic_editor.title_create')
           }}
         </p>
-        <button class="terminal-button terminal-button-secondary" @click="configureStore.resetTopicForm">
-          {{ t('dashboard.common.buttons.reset') }}
+        <button
+          class="terminal-button terminal-button-secondary p-2.5"
+          :title="t('dashboard.common.buttons.reset')"
+          :aria-label="t('dashboard.common.buttons.reset')"
+          @click="configureStore.resetTopicForm"
+        >
+          <UIcon name="i-heroicons-arrow-uturn-left" class="size-4" />
         </button>
       </div>
 
@@ -102,10 +107,15 @@ const categoryLabel = (source: SourceScope) => {
               </p>
               <button
                 type="button"
-                class="terminal-button terminal-button-secondary shrink-0"
+                class="terminal-button terminal-button-secondary flex shrink-0 items-center gap-1.5"
                 :disabled="configureStore.isSuggestingCategories"
                 @click="configureStore.suggestCategories"
               >
+                <UIcon
+                  name="i-heroicons-sparkles"
+                  class="size-4"
+                  :class="{ 'animate-pulse': configureStore.isSuggestingCategories }"
+                />
                 {{
                   configureStore.isSuggestingCategories
                     ? t('dashboard.configure.topic_editor.suggesting')
@@ -247,10 +257,11 @@ const categoryLabel = (source: SourceScope) => {
       </div>
 
       <button
-        class="terminal-button terminal-button-primary w-full"
+        class="terminal-button terminal-button-primary flex w-full items-center justify-center gap-2"
         :disabled="configureStore.isSavingTopic"
         @click="configureStore.saveTopic"
       >
+        <UIcon name="i-heroicons-check" class="size-4" />
         {{
           configureStore.isSavingTopic
             ? t('dashboard.configure.topic_editor.saving')

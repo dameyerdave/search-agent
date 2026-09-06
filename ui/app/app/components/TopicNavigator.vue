@@ -25,11 +25,13 @@ const sourceNames = (topic: SearchTopic) =>
           </p>
         </div>
         <button
-          class="terminal-button terminal-button-secondary"
+          class="terminal-button terminal-button-secondary p-2.5"
           :disabled="dashboardStore.isLoadingDashboard"
+          :title="t('dashboard.common.buttons.refresh')"
+          :aria-label="t('dashboard.common.buttons.refresh')"
           @click="dashboardStore.refreshAll"
         >
-          {{ t('dashboard.common.buttons.refresh') }}
+          <UIcon name="i-heroicons-arrow-path" class="size-4" />
         </button>
       </div>
 
@@ -95,35 +97,55 @@ const sourceNames = (topic: SearchTopic) =>
           </div>
 
           <div class="mt-2.5 flex flex-wrap gap-1.5">
-            <button class="terminal-button terminal-button-primary" @click="dashboardStore.focusTopicResults(topic)">
-              {{ t('dashboard.common.buttons.inspect') }}
+            <button
+              class="terminal-button terminal-button-primary p-2"
+              :title="t('dashboard.common.buttons.inspect')"
+              :aria-label="t('dashboard.common.buttons.inspect')"
+              @click="dashboardStore.focusTopicResults(topic)"
+            >
+              <UIcon name="i-heroicons-eye" class="size-4" />
             </button>
             <button
-              class="terminal-button terminal-button-secondary"
+              class="terminal-button terminal-button-secondary p-2"
               :disabled="dashboardStore.activeTopicRun === topic.slug"
-              @click="dashboardStore.runTopic(topic)"
-            >
-              {{
+              :title="
                 dashboardStore.activeTopicRun === topic.slug
                   ? t('dashboard.common.buttons.running')
                   : t('dashboard.common.buttons.run_now')
-              }}
+              "
+              :aria-label="t('dashboard.common.buttons.run_now')"
+              @click="dashboardStore.runTopic(topic)"
+            >
+              <UIcon
+                :name="dashboardStore.activeTopicRun === topic.slug ? 'i-heroicons-arrow-path' : 'i-heroicons-play'"
+                class="size-4"
+                :class="{ 'animate-spin': dashboardStore.activeTopicRun === topic.slug }"
+              />
             </button>
             <button
-              class="terminal-button terminal-button-secondary"
+              class="terminal-button terminal-button-secondary p-2"
               :disabled="dashboardStore.activeTopicAcknowledge === topic.slug"
+              :title="t('dashboard.common.buttons.ack_new')"
+              :aria-label="t('dashboard.common.buttons.ack_new')"
               @click="dashboardStore.acknowledgeTopic(topic)"
             >
-              {{ t('dashboard.common.buttons.ack_new') }}
+              <UIcon name="i-heroicons-check" class="size-4" />
             </button>
             <button
-              class="terminal-button terminal-button-secondary"
+              class="terminal-button terminal-button-secondary p-2"
+              :title="t('dashboard.common.buttons.edit')"
+              :aria-label="t('dashboard.common.buttons.edit')"
               @click="dashboardStore.editTopicInConfigure(topic)"
             >
-              {{ t('dashboard.common.buttons.edit') }}
+              <UIcon name="i-heroicons-pencil" class="size-4" />
             </button>
-            <button class="terminal-button terminal-button-danger" @click="dashboardStore.deleteTopic(topic)">
-              {{ t('dashboard.common.buttons.delete') }}
+            <button
+              class="terminal-button terminal-button-danger p-2"
+              :title="t('dashboard.common.buttons.delete')"
+              :aria-label="t('dashboard.common.buttons.delete')"
+              @click="dashboardStore.deleteTopic(topic)"
+            >
+              <UIcon name="i-heroicons-trash" class="size-4" />
             </button>
           </div>
         </article>

@@ -113,11 +113,13 @@ const mapEmptyLabel = computed(() => (hasSelectedTopic.value ? t('map.empty_topi
 
           <div class="flex flex-wrap gap-2">
             <button
-              class="terminal-button terminal-button-secondary"
+              class="terminal-button terminal-button-secondary p-2.5"
               :disabled="!hasSelectedTopic"
+              :title="t('map.controls.refresh')"
+              :aria-label="t('map.controls.refresh')"
               @click="mapQuery.refetch()"
             >
-              {{ t('map.controls.refresh') }}
+              <UIcon name="i-heroicons-arrow-path" class="size-4" />
             </button>
           </div>
         </div>

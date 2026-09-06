@@ -58,7 +58,11 @@ const { t } = useI18n()
               <p class="mt-2 truncate text-sm text-white">{{ dashboardStore.currentUserLabel }}</p>
               <p class="mt-1 truncate text-xs text-[var(--muted)]">{{ dashboardStore.busyLabel }}</p>
               <div class="mt-3">
-                <button class="terminal-button terminal-button-secondary text-xs" @click="dashboardStore.handleLogout">
+                <button
+                  class="terminal-button terminal-button-secondary flex items-center gap-1.5 text-xs"
+                  @click="dashboardStore.handleLogout"
+                >
+                  <UIcon name="i-heroicons-arrow-right-on-rectangle" class="size-3.5" />
                   {{ t('dashboard.shell.header.sign_out') }}
                 </button>
               </div>
@@ -67,7 +71,11 @@ const { t } = useI18n()
               <p class="mt-2 text-sm text-white">{{ t('dashboard.shell.header.not_signed_in') }}</p>
               <p v-if="authStore.error" class="mt-1 text-xs break-words text-[#ffd8d8]">{{ authStore.error }}</p>
               <div class="mt-3">
-                <button class="terminal-button terminal-button-primary" @click="authStore.signIn()">
+                <button
+                  class="terminal-button terminal-button-primary flex items-center gap-1.5"
+                  @click="authStore.signIn()"
+                >
+                  <UIcon name="i-heroicons-arrow-left-on-rectangle" class="size-4" />
                   {{ t('dashboard.shell.header.sign_in') }}
                 </button>
               </div>

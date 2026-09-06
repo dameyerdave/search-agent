@@ -67,14 +67,21 @@ const nextRunInline = (topic: SearchTopic) => {
           </div>
 
           <div class="mt-2.5 flex flex-wrap gap-1.5">
-            <button class="terminal-button terminal-button-primary" @click="dashboardStore.focusTopicResults(topic)">
-              {{ t('dashboard.common.buttons.inspect') }}
+            <button
+              class="terminal-button terminal-button-primary p-2"
+              :title="t('dashboard.common.buttons.inspect')"
+              :aria-label="t('dashboard.common.buttons.inspect')"
+              @click="dashboardStore.focusTopicResults(topic)"
+            >
+              <UIcon name="i-heroicons-eye" class="size-4" />
             </button>
             <button
-              class="terminal-button terminal-button-secondary"
+              class="terminal-button terminal-button-secondary p-2"
+              :title="t('dashboard.common.buttons.edit')"
+              :aria-label="t('dashboard.common.buttons.edit')"
               @click="dashboardStore.editTopicInConfigure(topic)"
             >
-              {{ t('dashboard.common.buttons.edit') }}
+              <UIcon name="i-heroicons-pencil" class="size-4" />
             </button>
           </div>
         </article>

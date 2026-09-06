@@ -62,8 +62,13 @@ const resultOrderLabel = (source: SourceScope) =>
               : t('dashboard.configure.source_editor.title_create')
           }}
         </p>
-        <button class="terminal-button terminal-button-secondary" @click="configureStore.resetSourceForm">
-          {{ t('dashboard.common.buttons.reset') }}
+        <button
+          class="terminal-button terminal-button-secondary p-2.5"
+          :title="t('dashboard.common.buttons.reset')"
+          :aria-label="t('dashboard.common.buttons.reset')"
+          @click="configureStore.resetSourceForm"
+        >
+          <UIcon name="i-heroicons-arrow-uturn-left" class="size-4" />
         </button>
       </div>
 
@@ -189,17 +194,21 @@ const resultOrderLabel = (source: SourceScope) =>
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    class="terminal-button terminal-button-secondary"
+                    class="terminal-button terminal-button-secondary p-2"
+                    :title="t('dashboard.common.buttons.select_all')"
+                    :aria-label="t('dashboard.common.buttons.select_all')"
                     @click="configureStore.selectAllSourceCategories"
                   >
-                    {{ t('dashboard.common.buttons.select_all') }}
+                    <UIcon name="i-heroicons-check-circle" class="size-4" />
                   </button>
                   <button
                     type="button"
-                    class="terminal-button terminal-button-secondary"
+                    class="terminal-button terminal-button-secondary p-2"
+                    :title="t('dashboard.common.buttons.clear')"
+                    :aria-label="t('dashboard.common.buttons.clear')"
                     @click="configureStore.clearSourceCategories"
                   >
-                    {{ t('dashboard.common.buttons.clear') }}
+                    <UIcon name="i-heroicons-x-mark" class="size-4" />
                   </button>
                 </div>
               </div>
@@ -233,17 +242,21 @@ const resultOrderLabel = (source: SourceScope) =>
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    class="terminal-button terminal-button-secondary"
+                    class="terminal-button terminal-button-secondary p-2"
+                    :title="t('dashboard.common.buttons.select_all')"
+                    :aria-label="t('dashboard.common.buttons.select_all')"
                     @click="configureStore.selectAllSourceEngines"
                   >
-                    {{ t('dashboard.common.buttons.select_all') }}
+                    <UIcon name="i-heroicons-check-circle" class="size-4" />
                   </button>
                   <button
                     type="button"
-                    class="terminal-button terminal-button-secondary"
+                    class="terminal-button terminal-button-secondary p-2"
+                    :title="t('dashboard.common.buttons.clear')"
+                    :aria-label="t('dashboard.common.buttons.clear')"
                     @click="configureStore.clearSourceEngines"
                   >
-                    {{ t('dashboard.common.buttons.clear') }}
+                    <UIcon name="i-heroicons-x-mark" class="size-4" />
                   </button>
                 </div>
               </div>
@@ -270,17 +283,21 @@ const resultOrderLabel = (source: SourceScope) =>
                 <div class="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    class="terminal-button terminal-button-secondary"
+                    class="terminal-button terminal-button-secondary p-2"
+                    :title="t('dashboard.common.buttons.select_all')"
+                    :aria-label="t('dashboard.common.buttons.select_all')"
                     @click="configureStore.selectAllSourceLanguages"
                   >
-                    {{ t('dashboard.common.buttons.select_all') }}
+                    <UIcon name="i-heroicons-check-circle" class="size-4" />
                   </button>
                   <button
                     type="button"
-                    class="terminal-button terminal-button-secondary"
+                    class="terminal-button terminal-button-secondary p-2"
+                    :title="t('dashboard.common.buttons.clear')"
+                    :aria-label="t('dashboard.common.buttons.clear')"
                     @click="configureStore.clearSourceLanguages"
                   >
-                    {{ t('dashboard.common.buttons.clear') }}
+                    <UIcon name="i-heroicons-x-mark" class="size-4" />
                   </button>
                 </div>
               </div>
@@ -317,10 +334,11 @@ const resultOrderLabel = (source: SourceScope) =>
 
       <div class="flex flex-wrap gap-2">
         <button
-          class="terminal-button terminal-button-primary"
+          class="terminal-button terminal-button-primary flex items-center gap-2"
           :disabled="configureStore.isSavingSource"
           @click="configureStore.saveSource"
         >
+          <UIcon name="i-heroicons-check" class="size-4" />
           {{
             configureStore.isSavingSource
               ? t('dashboard.configure.source_editor.saving')
@@ -348,11 +366,21 @@ const resultOrderLabel = (source: SourceScope) =>
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button class="terminal-button terminal-button-secondary" @click="configureStore.openSourceEditor(source)">
-              {{ t('dashboard.common.buttons.edit') }}
+            <button
+              class="terminal-button terminal-button-secondary p-2"
+              :title="t('dashboard.common.buttons.edit')"
+              :aria-label="t('dashboard.common.buttons.edit')"
+              @click="configureStore.openSourceEditor(source)"
+            >
+              <UIcon name="i-heroicons-pencil" class="size-4" />
             </button>
-            <button class="terminal-button terminal-button-danger" @click="configureStore.deleteSource(source)">
-              {{ t('dashboard.common.buttons.delete') }}
+            <button
+              class="terminal-button terminal-button-danger p-2"
+              :title="t('dashboard.common.buttons.delete')"
+              :aria-label="t('dashboard.common.buttons.delete')"
+              @click="configureStore.deleteSource(source)"
+            >
+              <UIcon name="i-heroicons-trash" class="size-4" />
             </button>
           </div>
         </div>

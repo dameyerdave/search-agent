@@ -29,8 +29,13 @@ useInfiniteScroll(window, () => runsStore.loadMoreRuns(), {
           {{ t('dashboard.runs.run_history.title') }}
         </p>
         <div class="flex flex-wrap gap-2">
-          <button class="terminal-button terminal-button-secondary" @click="runsStore.clearRunFilters">
-            {{ t('dashboard.common.buttons.clear_filters') }}
+          <button
+            class="terminal-button terminal-button-secondary p-2.5"
+            :title="t('dashboard.common.buttons.clear_filters')"
+            :aria-label="t('dashboard.common.buttons.clear_filters')"
+            @click="runsStore.clearRunFilters"
+          >
+            <UIcon name="i-heroicons-x-circle" class="size-4" />
           </button>
         </div>
       </div>
@@ -129,7 +134,11 @@ useInfiniteScroll(window, () => runsStore.loadMoreRuns(), {
         <p class="text-sm text-[var(--muted)]">{{ t('dashboard.runs.run_history.loading_more') }}</p>
       </div>
       <div v-else-if="runsStore.canLoadMoreRuns && runsStore.autoLoadCapReachedRuns" class="flex justify-center py-2">
-        <button class="terminal-button terminal-button-secondary" @click="runsStore.loadMoreRuns">
+        <button
+          class="terminal-button terminal-button-secondary flex items-center gap-1.5"
+          @click="runsStore.loadMoreRuns"
+        >
+          <UIcon name="i-heroicons-chevron-down" class="size-4" />
           {{ t('dashboard.common.buttons.load_more') }}
         </button>
       </div>

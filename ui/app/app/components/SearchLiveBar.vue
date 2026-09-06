@@ -12,26 +12,39 @@ const { t } = useI18n()
     </div>
     <div class="flex flex-wrap gap-2">
       <button
-        class="terminal-button terminal-button-secondary"
+        class="terminal-button terminal-button-secondary p-2.5"
         :aria-expanded="searchStore.showAdvancedSearch"
         aria-controls="search-advanced-panel"
-        @click="searchStore.showAdvancedSearch = !searchStore.showAdvancedSearch"
-      >
-        {{
+        :title="
           searchStore.showAdvancedSearch
             ? t('dashboard.search.live_bar.hide_advanced')
             : t('dashboard.search.live_bar.show_advanced')
-        }}
+        "
+        :aria-label="
+          searchStore.showAdvancedSearch
+            ? t('dashboard.search.live_bar.hide_advanced')
+            : t('dashboard.search.live_bar.show_advanced')
+        "
+        @click="searchStore.showAdvancedSearch = !searchStore.showAdvancedSearch"
+      >
+        <UIcon name="i-heroicons-adjustments-horizontal" class="size-4" />
       </button>
       <button
-        class="terminal-button terminal-button-secondary"
+        class="terminal-button terminal-button-secondary p-2.5"
         :disabled="!searchStore.canSaveLiveSearchAsTopic"
+        :title="t('dashboard.search.live_bar.save_search')"
+        :aria-label="t('dashboard.search.live_bar.save_search')"
         @click="searchStore.openLiveSearchSaveDialog"
       >
-        {{ t('dashboard.search.live_bar.save_search') }}
+        <UIcon name="i-heroicons-bookmark-square" class="size-4" />
       </button>
-      <button class="terminal-button terminal-button-secondary" @click="searchStore.resetLiveSearchWorkspace">
-        {{ t('dashboard.common.buttons.reset') }}
+      <button
+        class="terminal-button terminal-button-secondary p-2.5"
+        :title="t('dashboard.common.buttons.reset')"
+        :aria-label="t('dashboard.common.buttons.reset')"
+        @click="searchStore.resetLiveSearchWorkspace"
+      >
+        <UIcon name="i-heroicons-arrow-uturn-left" class="size-4" />
       </button>
     </div>
   </div>
@@ -60,10 +73,11 @@ const { t } = useI18n()
       </div>
     </label>
     <button
-      class="terminal-button terminal-button-primary h-[46px] self-end px-6"
+      class="terminal-button terminal-button-primary flex h-[46px] items-center justify-center gap-2 self-end px-6"
       :disabled="searchStore.isRunningLiveSearch"
       @click="searchStore.runLiveSearch()"
     >
+      <UIcon name="i-heroicons-magnifying-glass" class="size-4" />
       {{
         searchStore.isRunningLiveSearch
           ? t('dashboard.search.live_bar.searching')

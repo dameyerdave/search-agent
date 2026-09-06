@@ -51,10 +51,11 @@ const { t } = useI18n()
       </div>
 
       <button
-        class="terminal-button terminal-button-primary w-full"
+        class="terminal-button terminal-button-primary flex w-full items-center justify-center gap-2"
         :disabled="dashboardStore.isSavingProvider"
         @click="dashboardStore.saveProvider"
       >
+        <UIcon name="i-heroicons-check" class="size-4" />
         {{
           dashboardStore.isSavingProvider
             ? t('dashboard.configure.provider.saving')

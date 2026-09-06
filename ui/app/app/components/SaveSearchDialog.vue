@@ -37,8 +37,13 @@ const categoryLabel = (source: SourceScope) => {
               <span class="text-[var(--text)]">{{ searchStore.liveSearchForm.q || t('results.not_available') }}</span>
             </p>
           </div>
-          <button class="terminal-button terminal-button-secondary" @click="searchStore.closeLiveSearchSaveDialog">
-            {{ t('dashboard.common.buttons.close') }}
+          <button
+            class="terminal-button terminal-button-secondary p-2.5"
+            :title="t('dashboard.common.buttons.close')"
+            :aria-label="t('dashboard.common.buttons.close')"
+            @click="searchStore.closeLiveSearchSaveDialog"
+          >
+            <UIcon name="i-heroicons-x-mark" class="size-4" />
           </button>
         </div>
 
@@ -182,14 +187,19 @@ const categoryLabel = (source: SourceScope) => {
         </div>
 
         <div class="flex flex-wrap justify-end gap-2">
-          <button class="terminal-button terminal-button-secondary" @click="searchStore.closeLiveSearchSaveDialog">
+          <button
+            class="terminal-button terminal-button-secondary flex items-center gap-1.5"
+            @click="searchStore.closeLiveSearchSaveDialog"
+          >
+            <UIcon name="i-heroicons-x-mark" class="size-4" />
             {{ t('dashboard.common.buttons.cancel') }}
           </button>
           <button
-            class="terminal-button terminal-button-primary"
+            class="terminal-button terminal-button-primary flex items-center gap-2"
             :disabled="searchStore.isSavingLiveSearchTopic || !searchStore.canSaveLiveSearch"
             @click="searchStore.saveLiveSearchAsTopic"
           >
+            <UIcon name="i-heroicons-check" class="size-4" />
             {{
               searchStore.isSavingLiveSearchTopic
                 ? t('dashboard.search.save_dialog.saving_topic')
