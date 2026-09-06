@@ -490,5 +490,25 @@
       "alt": "OpenStreetMap tile",
       "attribution": "Map data: OpenStreetMap contributors"
     }
+  },
+  "timeline": {
+    "title": "Timeline summary",
+    "subtitle_topic": "AI-generated chronology of what happened for {topic}, dated and placed from stored results.",
+    "select_topic_prompt": "Select a topic in Results Terminal to build its timeline.",
+    "empty_topic": "No timeline yet — generate one from this topic's stored results.",
+    "generated_at": "Generated {date}",
+    "controls": {
+      "generate": "Generate timeline",
+      "generating": "Generating..."
+    },
+    "entry": {
+      "unknown_date": "Date unknown"
+    },
+    "success": {
+      "generated": "Timeline generated."
+    },
+    "errors": {
+      "generate_failed": "Failed to generate the timeline."
+    }
   }
 }

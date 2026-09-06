@@ -8,6 +8,7 @@ from .models import (
     SearchRun,
     SearchTopic,
     SourceScope,
+    TopicTimelineSummary,
 )
 
 
@@ -87,3 +88,9 @@ class SearchResultLocationAdmin(admin.ModelAdmin):
     list_display = ("name", "result", "latitude", "longitude", "place_type")
     list_filter = ("place_type",)
     search_fields = ("name", "display_name", "result__title", "result__url")
+
+
+@admin.register(TopicTimelineSummary)
+class TopicTimelineSummaryAdmin(admin.ModelAdmin):
+    list_display = ("topic", "generated_at", "model_name")
+    search_fields = ("topic__name",)

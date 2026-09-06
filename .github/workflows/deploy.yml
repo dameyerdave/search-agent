@@ -11,6 +11,7 @@
 #   DJANGO_SU_PASSWORD             Password for the seeded Django admin user
 #   CLOUDFLARE_ACCESS_AUDIENCE    Cloudflare Access application audience tag
 #   TUNNEL_TOKEN                  Cloudflare Tunnel connector token
+#   SWISSAI_API_KEY                CSCS Swiss AI inference API key (topic timelines)
 name: Build and Deploy
 
 on:
@@ -117,6 +118,7 @@ jobs:
           DJANGO_SU_PASSWORD: ${{ secrets.DJANGO_SU_PASSWORD }}
           CLOUDFLARE_ACCESS_AUDIENCE: ${{ secrets.CLOUDFLARE_ACCESS_AUDIENCE }}
           TUNNEL_TOKEN: ${{ secrets.TUNNEL_TOKEN }}
+          SWISSAI_API_KEY: ${{ secrets.SWISSAI_API_KEY }}
         run: |
           cat > /tmp/secrets-values.yaml <<EOF
           secrets:
@@ -125,6 +127,7 @@ jobs:
             DJANGO_SU_PASSWORD: "${DJANGO_SU_PASSWORD}"
             CLOUDFLARE_ACCESS_AUDIENCE: "${CLOUDFLARE_ACCESS_AUDIENCE}"
             TUNNEL_TOKEN: "${TUNNEL_TOKEN}"
+            SWISSAI_API_KEY: "${SWISSAI_API_KEY}"
           EOF
 
           helm upgrade --install search-agent ./kube/helm/search-agent \

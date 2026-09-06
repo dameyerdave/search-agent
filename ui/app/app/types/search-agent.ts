@@ -217,6 +217,32 @@ export interface DashboardPayload {
   recent_runs: SearchRun[]
 }
 
+export interface TopicTimelineResultRef {
+  id: number
+  title: string
+  url: string
+}
+
+export interface TopicTimelineEntry {
+  order: number
+  date: string
+  time: string
+  place: string
+  summary: string
+  latitude: number | null
+  longitude: number | null
+  results: TopicTimelineResultRef[]
+}
+
+export interface TopicTimelineSummary {
+  id: number
+  generated_at: string
+  model_name: string
+  entries: TopicTimelineEntry[]
+  created_at: string
+  updated_at: string
+}
+
 export interface PaginatedResponse<T> {
   count: number
   next: string | null

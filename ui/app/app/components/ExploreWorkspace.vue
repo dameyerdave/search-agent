@@ -23,6 +23,10 @@ const exploreStore = useExploreWorkspaceStore()
         :kind="exploreStore.resultFilters.kind"
         :is-new-only="exploreStore.resultFilters.isNewOnly"
       />
+      <TopicTimelineWorkspace
+        :topic-slug="exploreStore.resultFilters.topic"
+        :topic-name="exploreStore.selectedTopic?.name ?? ''"
+      />
     </div>
   </section>
 </template>

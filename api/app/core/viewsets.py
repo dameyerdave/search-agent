@@ -9,6 +9,8 @@ from .models import PushSubscription, SavedFolder, SearchProviderConfig, SearchR
 from .querysets import owned_folders, owned_results, owned_runs, owned_source_scopes, owned_topics
 from .tasks import run_topic_search_task
 from .result_locations import build_result_location_map_payload
+from .timeline import TimelineUnavailable, generate_topic_timeline
+from .timeline_serializers import TopicTimelineSummarySerializer
 from .serializers import (
     PushSubscriptionSerializer,
     SavedFolderSerializer,
@@ -83,6 +85,20 @@ class SearchTopicViewSet(viewsets.ModelViewSet):
         topic = self.get_object()
         updated = topic.results.filter(is_new=True).update(is_new=False)
         return Response({"acknowledged": updated})
+
+    @action(detail=True, methods=["get", "post"])
+    def timeline(self, request, slug=None):
+        topic = self.get_object()
+        if request.method == "POST":
+            try:
+                summary = generate_topic_timeline(topic)
+            except TimelineUnavailable as exc:
+                return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        else:
+            summary = getattr(topic, "timeline_summary", None)
+            if summary is None:
+                return Response(None)
+        return Response(TopicTimelineSummarySerializer(summary).data)
 
 
 class SearchProviderConfigViewSet(viewsets.ModelViewSet):

@@ -63,6 +63,9 @@ config:
   CRAWL4AI_MAX_PAGES_PER_RUN: "25"
   CRAWL4AI_PRUNE_THRESHOLD: "0.4"
   CRAWL4AI_WORD_COUNT_THRESHOLD: "20"
+  SWISSAI_BASE_URL: "https://api.swissai.svc.cscs.ch/v1"
+  SWISSAI_MODEL: "CSCS-Inference/swiss-ai/Apertus-v1.5-70B"
+  SWISSAI_TIMEOUT_S: "60"
   CLOUDFLARE_ACCESS_TEAM_DOMAIN: "https://xuno-search-agent.cloudflareaccess.com"
   CLOUDFLARE_ACCESS_APP_DOMAIN: "app.xuno.ch"
   CLOUDFLARE_ACCESS_REDIRECT_URL: "/"
@@ -81,6 +84,7 @@ secrets:
   DJANGO_SU_PASSWORD: ""
   CLOUDFLARE_ACCESS_AUDIENCE: ""
   TUNNEL_TOKEN: ""
+  SWISSAI_API_KEY: ""
 
 postgres:
   image: postgres:18-bookworm

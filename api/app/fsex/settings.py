@@ -24,6 +24,12 @@ CRAWL4AI_HEADLESS = env.bool("CRAWL4AI_HEADLESS", default=True)
 CRAWL4AI_MAX_PAGES_PER_RUN = env.int("CRAWL4AI_MAX_PAGES_PER_RUN", default=25)
 CRAWL4AI_PRUNE_THRESHOLD = env.float("CRAWL4AI_PRUNE_THRESHOLD", default=0.4)
 CRAWL4AI_WORD_COUNT_THRESHOLD = env.int("CRAWL4AI_WORD_COUNT_THRESHOLD", default=20)
+SWISSAI_BASE_URL = env.str(
+    "SWISSAI_BASE_URL", default="https://api.swissai.svc.cscs.ch/v1"
+).rstrip("/")
+SWISSAI_API_KEY = env.str("SWISSAI_API_KEY", default="")
+SWISSAI_MODEL = env.str("SWISSAI_MODEL", default="CSCS-Inference/swiss-ai/Apertus-v1.5-70B")
+SWISSAI_TIMEOUT_S = env.float("SWISSAI_TIMEOUT_S", default=60.0)
 CLOUDFLARE_ACCESS_TEAM_DOMAIN = env.str(
     "CLOUDFLARE_ACCESS_TEAM_DOMAIN",
     default="",
