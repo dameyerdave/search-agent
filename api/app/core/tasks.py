@@ -5,6 +5,7 @@ from django.utils import timezone
 from celery import shared_task
 
 from .models import SearchRun, SearchTopic
+from .result_images import backfill_missing_images
 from .services import run_topic_search, send_push_notifications
 
 
@@ -93,3 +94,16 @@ def dispatch_press_review_refresh():
     for topic_id in topic_ids:
         run_topic_search_task.delay(topic_id)
     return {"queued_count": len(topic_ids)}
+
+
+@shared_task
+def backfill_result_images_task():
+    """Gradually populate image_url for older results that predate image capture.
+
+    A topic's own crawl only fetches a result's page once (see needs_crawl in
+    upsert_search_result), so results crawled before image capture existed never
+    get a second pass on their own - this periodic task clears that backlog a
+    small batch at a time via a lightweight direct fetch (see result_images.py),
+    without needing a manual backfill run.
+    """
+    return {"updated_count": backfill_missing_images()}

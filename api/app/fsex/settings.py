@@ -177,6 +177,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "core.tasks.dispatch_press_review_refresh",
         "schedule": crontab(hour=20, minute=0),
     },
+    "backfill-result-images": {
+        "task": "core.tasks.backfill_result_images_task",
+        "schedule": timedelta(minutes=5),
+    },
 }
 
 AUTH_PASSWORD_VALIDATORS = [
