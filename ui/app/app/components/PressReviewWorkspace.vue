@@ -31,6 +31,21 @@ const topicGroups = computed(() => {
     (a, b) => b.newCount - a.newCount || a.topicName.localeCompare(b.topicName),
   )
 })
+
+const selectedTopicId = ref<number | null>(null)
+const selectedGroup = computed(
+  () => topicGroups.value.find((group) => group.topicId === selectedTopicId.value) ?? null,
+)
+
+const openTopic = (topicId: number) => {
+  selectedTopicId.value = topicId
+  window.scrollTo({ top: 0 })
+}
+
+const backToTopics = () => {
+  selectedTopicId.value = null
+  window.scrollTo({ top: 0 })
+}
 </script>
 
 <template>
@@ -86,67 +101,101 @@ const topicGroups = computed(() => {
       {{ t('press_review.empty') }}
     </div>
 
-    <div v-else class="space-y-5 sm:space-y-6">
-      <section v-for="group in topicGroups" :key="group.topicId" class="space-y-3">
-        <div class="terminal-panel relative overflow-hidden rounded-[1.1rem] p-3 sm:rounded-2xl sm:p-4">
-          <div class="relative z-10 flex flex-wrap items-center justify-between gap-2">
+    <!-- Topics overview -->
+    <div v-else-if="!selectedGroup" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <button
+        v-for="group in topicGroups"
+        :key="group.topicId"
+        type="button"
+        class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-4 text-left transition-transform hover:-translate-y-0.5 sm:rounded-2xl"
+        @click="openTopic(group.topicId)"
+      >
+        <div class="relative z-10 flex items-start justify-between gap-3">
+          <div class="min-w-0">
             <p class="truncate text-sm font-medium text-white sm:text-base">{{ group.topicName }}</p>
-            <div class="flex shrink-0 flex-wrap items-center gap-1.5">
-              <span v-if="group.newCount > 0" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
-                {{ t('press_review.new_count', { count: group.newCount }) }}
+            <p class="mt-1 text-xs text-[var(--muted)]">
+              {{ t('press_review.topic_total_count', { count: group.results.length }) }}
+            </p>
+          </div>
+          <UIcon name="i-heroicons-chevron-right" class="mt-0.5 size-4 shrink-0 text-[var(--muted)]" />
+        </div>
+        <div class="relative z-10 mt-3">
+          <span v-if="group.newCount > 0" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
+            {{ t('press_review.new_count', { count: group.newCount }) }}
+          </span>
+          <span v-else class="text-xs text-[var(--muted)]">{{ t('press_review.no_new') }}</span>
+        </div>
+      </button>
+    </div>
+
+    <!-- Topic detail -->
+    <div v-else class="space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <button
+            class="terminal-button terminal-button-secondary p-2"
+            :title="t('press_review.back_to_topics')"
+            :aria-label="t('press_review.back_to_topics')"
+            @click="backToTopics"
+          >
+            <UIcon name="i-heroicons-arrow-left" class="size-4" />
+          </button>
+          <p class="text-sm font-medium text-white sm:text-base">{{ selectedGroup.topicName }}</p>
+        </div>
+        <div class="flex shrink-0 flex-wrap items-center gap-1.5">
+          <span v-if="selectedGroup.newCount > 0" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
+            {{ t('press_review.new_count', { count: selectedGroup.newCount }) }}
+          </span>
+          <span class="text-xs text-[var(--muted)]">
+            {{ t('press_review.topic_total_count', { count: selectedGroup.results.length }) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <article
+          v-for="result in selectedGroup.results"
+          :key="result.id"
+          class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-3 sm:rounded-2xl"
+        >
+          <div class="relative z-10 space-y-2.5">
+            <ResultThumbnail :src="result.image_url" :alt="result.title" />
+
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
+                {{ t('results.badges.new') }}
               </span>
-              <span class="text-xs text-[var(--muted)]">
-                {{ t('press_review.topic_total_count', { count: group.results.length }) }}
-              </span>
+            </div>
+
+            <a
+              :href="result.url"
+              target="_blank"
+              rel="noreferrer"
+              class="block text-sm leading-6 font-medium text-white hover:text-[var(--accent)]"
+            >
+              {{ result.title }}
+            </a>
+
+            <p class="text-xs leading-5 text-[var(--muted)]">
+              {{ result.ai_summary || result.snippet || t('results.no_preview') }}
+            </p>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <p class="text-[11px] text-[var(--muted)]">
+                {{ t('results.meta.published', { date: formatResultDate(result.published_at) }) }}
+              </p>
+              <button
+                class="terminal-button terminal-button-secondary p-2"
+                :title="t('results.follow.button')"
+                :aria-label="t('results.follow.button')"
+                @click="followResult(result)"
+              >
+                <UIcon name="i-heroicons-signal" class="size-3.5" />
+              </button>
             </div>
           </div>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <article
-            v-for="result in group.results"
-            :key="result.id"
-            class="terminal-panel relative overflow-hidden rounded-[1.2rem] p-3 sm:rounded-2xl"
-          >
-            <div class="relative z-10 space-y-2.5">
-              <ResultThumbnail :src="result.image_url" :alt="result.title" />
-
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
-                  {{ t('results.badges.new') }}
-                </span>
-              </div>
-
-              <a
-                :href="result.url"
-                target="_blank"
-                rel="noreferrer"
-                class="block text-sm leading-6 font-medium text-white hover:text-[var(--accent)]"
-              >
-                {{ result.title }}
-              </a>
-
-              <p class="text-xs leading-5 text-[var(--muted)]">
-                {{ result.ai_summary || result.snippet || t('results.no_preview') }}
-              </p>
-
-              <div class="flex items-center justify-between gap-2 pt-1">
-                <p class="text-[11px] text-[var(--muted)]">
-                  {{ t('results.meta.published', { date: formatResultDate(result.published_at) }) }}
-                </p>
-                <button
-                  class="terminal-button terminal-button-secondary p-2"
-                  :title="t('results.follow.button')"
-                  :aria-label="t('results.follow.button')"
-                  @click="followResult(result)"
-                >
-                  <UIcon name="i-heroicons-signal" class="size-3.5" />
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
+        </article>
+      </div>
     </div>
 
     <div class="flex justify-center pt-2">
