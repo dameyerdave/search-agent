@@ -552,6 +552,7 @@
     "title": "Press Review",
     "subtitle": "What happened across your topics, refreshed automatically through the day.",
     "new_count": "{count} new",
+    "topic_total_count": "{count} results",
     "acknowledge_all": "Mark all as seen",
     "empty": "Nothing in the Press Review yet - it fills in as your topics find coverage.",
     "loading_more": "Loading more coverage...",
