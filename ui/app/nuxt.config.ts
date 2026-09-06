@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     head: {
       title: 'xuno | Search Agent',
       meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
         { name: 'theme-color', content: '#040604' },
         { name: 'application-name', content: 'xuno' },
         { name: 'mobile-web-app-capable', content: 'yes' },

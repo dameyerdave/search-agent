@@ -3,9 +3,18 @@ const dashboardStore = useDashboardStore()
 const searchStore = useSearchWorkspaceStore()
 const { t } = useI18n()
 
-const categoriesHintId = 'live-search-categories-hint'
-const enginesHintId = 'live-search-engines-hint'
-const languagesHintId = 'live-search-languages-hint'
+const categoryOptions = computed(() =>
+  dashboardStore.availableCategories.map((category) => ({ value: category, label: category })),
+)
+const engineOptions = computed(() =>
+  dashboardStore.availableEngines.map((engine) => ({ value: engine, label: engine })),
+)
+const languageOptions = computed(() =>
+  dashboardStore.availableLanguages.map((language) => ({
+    value: language.code,
+    label: `${language.label} (${language.code})`,
+  })),
+)
 </script>
 
 <template>
@@ -118,21 +127,11 @@ const languagesHintId = 'live-search-languages-hint'
           </button>
         </div>
       </div>
-      <template v-if="dashboardStore.availableLanguages.length">
-        <p :id="languagesHintId" class="text-xs text-[var(--muted)]">
-          {{ t('dashboard.search.advanced.multi_select_hint') }}
-        </p>
-        <select
-          v-model="searchStore.liveSearchForm.languages"
-          class="terminal-select min-h-[220px]"
-          multiple
-          :aria-describedby="languagesHintId"
-        >
-          <option v-for="language in dashboardStore.availableLanguages" :key="language.code" :value="language.code">
-            {{ language.label }} ({{ language.code }})
-          </option>
-        </select>
-      </template>
+      <CheckboxChipGroup
+        v-if="languageOptions.length"
+        v-model="searchStore.liveSearchForm.languages"
+        :options="languageOptions"
+      />
       <p v-else class="text-sm text-[var(--muted)]">{{ t('dashboard.search.advanced.no_languages') }}</p>
     </div>
 
@@ -163,21 +162,11 @@ const languagesHintId = 'live-search-languages-hint'
           </button>
         </div>
       </div>
-      <template v-if="dashboardStore.availableCategories.length">
-        <p :id="categoriesHintId" class="text-xs text-[var(--muted)]">
-          {{ t('dashboard.search.advanced.multi_select_hint') }}
-        </p>
-        <select
-          v-model="searchStore.liveSearchForm.categories"
-          class="terminal-select min-h-[220px]"
-          multiple
-          :aria-describedby="categoriesHintId"
-        >
-          <option v-for="category in dashboardStore.availableCategories" :key="category" :value="category">
-            {{ category }}
-          </option>
-        </select>
-      </template>
+      <CheckboxChipGroup
+        v-if="categoryOptions.length"
+        v-model="searchStore.liveSearchForm.categories"
+        :options="categoryOptions"
+      />
       <p v-else class="text-sm text-[var(--muted)]">{{ t('dashboard.search.advanced.no_categories') }}</p>
     </div>
 
@@ -208,21 +197,11 @@ const languagesHintId = 'live-search-languages-hint'
           </button>
         </div>
       </div>
-      <template v-if="dashboardStore.availableEngines.length">
-        <p :id="enginesHintId" class="text-xs text-[var(--muted)]">
-          {{ t('dashboard.search.advanced.multi_select_hint') }}
-        </p>
-        <select
-          v-model="searchStore.liveSearchForm.engines"
-          class="terminal-select min-h-[220px]"
-          multiple
-          :aria-describedby="enginesHintId"
-        >
-          <option v-for="engine in dashboardStore.availableEngines" :key="engine" :value="engine">
-            {{ engine }}
-          </option>
-        </select>
-      </template>
+      <CheckboxChipGroup
+        v-if="engineOptions.length"
+        v-model="searchStore.liveSearchForm.engines"
+        :options="engineOptions"
+      />
       <p v-else class="text-sm text-[var(--muted)]">{{ t('dashboard.search.advanced.no_engines') }}</p>
     </div>
   </div>

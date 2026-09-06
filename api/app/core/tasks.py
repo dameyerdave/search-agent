@@ -78,3 +78,18 @@ def run_all_topic_searches():
             }
         )
     return summaries
+
+
+@shared_task
+def dispatch_press_review_refresh():
+    """Force a fresh run of every press-review topic, regardless of its own schedule.
+
+    Triggered by the fixed-time-of-day beat entries (see CELERY_BEAT_SCHEDULE) so the
+    Press Review page reliably picks up new coverage at 05:00/11:00/17:00/20:00.
+    """
+    topic_ids = list(
+        SearchTopic.objects.filter(enabled=True, include_in_press_review=True).values_list("pk", flat=True)
+    )
+    for topic_id in topic_ids:
+        run_topic_search_task.delay(topic_id)
+    return {"queued_count": len(topic_ids)}

@@ -42,134 +42,143 @@ const categoryLabel = (source: SourceScope) => {
           </button>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.topic_name') }}
-            </span>
-            <input
-              v-model="searchStore.liveSearchSaveForm.name"
-              class="terminal-input"
-              :placeholder="searchStore.fallbackLiveTopicName()"
-            />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.description') }}
-            </span>
-            <textarea v-model="searchStore.liveSearchSaveForm.description" class="terminal-textarea min-h-[90px]" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.schedule_every') }}
-            </span>
-            <input
-              v-model="searchStore.liveSearchSaveForm.scheduleEvery"
-              class="terminal-input"
-              type="number"
-              min="1"
-            />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.schedule_unit') }}
-            </span>
-            <select v-model="searchStore.liveSearchSaveForm.scheduleUnit" class="terminal-select">
-              <option value="minutes">{{ t('dashboard.search.save_dialog.unit_minutes') }}</option>
-              <option value="hours">{{ t('dashboard.search.save_dialog.unit_hours') }}</option>
-              <option value="days">{{ t('dashboard.search.save_dialog.unit_days') }}</option>
-              <option value="weeks">{{ t('dashboard.search.save_dialog.unit_weeks') }}</option>
-            </select>
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.topic_enabled') }}
-            </span>
-            <select v-model="searchStore.liveSearchSaveForm.enabled" class="terminal-select">
-              <option :value="true">{{ t('dashboard.search.save_dialog.enabled') }}</option>
-              <option :value="false">{{ t('dashboard.search.save_dialog.disabled') }}</option>
-            </select>
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.dedicated_scope') }}
-            </span>
-            <select v-model="searchStore.liveSearchSaveForm.createScope" class="terminal-select">
-              <option :value="true">{{ t('dashboard.search.save_dialog.create_scope_option') }}</option>
-              <option :value="false">{{ t('dashboard.search.save_dialog.reuse_scopes_option') }}</option>
-            </select>
-          </label>
-        </div>
+        <div class="space-y-3">
+          <details class="terminal-disclosure" open>
+            <summary>{{ t('dashboard.search.save_dialog.section_details') }}</summary>
+            <div class="terminal-disclosure__body grid gap-3 sm:grid-cols-2">
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.topic_name') }}
+                </span>
+                <input
+                  v-model="searchStore.liveSearchSaveForm.name"
+                  class="terminal-input"
+                  :placeholder="searchStore.fallbackLiveTopicName()"
+                />
+              </label>
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.description') }}
+                </span>
+                <textarea v-model="searchStore.liveSearchSaveForm.description" class="terminal-textarea min-h-[90px]" />
+              </label>
+            </div>
+          </details>
 
-        <div
-          v-if="searchStore.liveSearchSaveForm.createScope"
-          class="grid gap-3 rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-4 sm:grid-cols-2"
-        >
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.scope_name') }}
-            </span>
-            <input
-              v-model="searchStore.liveSearchSaveForm.scopeName"
-              class="terminal-input"
-              :placeholder="searchStore.fallbackLiveScopeName()"
-            />
-          </label>
-          <label class="space-y-2 sm:col-span-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.scope_description') }}
-            </span>
-            <textarea
-              v-model="searchStore.liveSearchSaveForm.scopeDescription"
-              class="terminal-textarea min-h-[80px]"
-            />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.search.save_dialog.scope_kind') }}
-            </span>
-            <select v-model="searchStore.liveSearchSaveForm.scopeKind" class="terminal-select">
-              <option value="public">{{ t('dashboard.search.save_dialog.kind_public') }}</option>
-              <option value="research">{{ t('dashboard.search.save_dialog.kind_research') }}</option>
-              <option value="custom">{{ t('dashboard.search.save_dialog.kind_custom') }}</option>
-            </select>
-          </label>
-          <article class="rounded-2xl border border-[var(--line)] bg-black/25 p-4 text-sm text-[var(--muted)]">
-            <p>
-              {{ t('dashboard.search.save_dialog.derived_lookback') }}
-              <span class="text-[var(--text)]">{{
-                t('dashboard.search.save_dialog.days_suffix', {
-                  days: deriveLookbackDays(searchStore.liveSearchForm.timeRange),
-                })
-              }}</span>
-            </p>
-          </article>
-        </div>
+          <details class="terminal-disclosure">
+            <summary>{{ t('dashboard.search.save_dialog.section_schedule') }}</summary>
+            <div class="terminal-disclosure__body grid gap-3 sm:grid-cols-2">
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.schedule_every') }}
+                </span>
+                <input
+                  v-model="searchStore.liveSearchSaveForm.scheduleEvery"
+                  class="terminal-input"
+                  type="number"
+                  min="1"
+                />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.schedule_unit') }}
+                </span>
+                <select v-model="searchStore.liveSearchSaveForm.scheduleUnit" class="terminal-select">
+                  <option value="minutes">{{ t('dashboard.search.save_dialog.unit_minutes') }}</option>
+                  <option value="hours">{{ t('dashboard.search.save_dialog.unit_hours') }}</option>
+                  <option value="days">{{ t('dashboard.search.save_dialog.unit_days') }}</option>
+                  <option value="weeks">{{ t('dashboard.search.save_dialog.unit_weeks') }}</option>
+                </select>
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.topic_enabled') }}
+                </span>
+                <select v-model="searchStore.liveSearchSaveForm.enabled" class="terminal-select">
+                  <option :value="true">{{ t('dashboard.search.save_dialog.enabled') }}</option>
+                  <option :value="false">{{ t('dashboard.search.save_dialog.disabled') }}</option>
+                </select>
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.dedicated_scope') }}
+                </span>
+                <select v-model="searchStore.liveSearchSaveForm.createScope" class="terminal-select">
+                  <option :value="true">{{ t('dashboard.search.save_dialog.create_scope_option') }}</option>
+                  <option :value="false">{{ t('dashboard.search.save_dialog.reuse_scopes_option') }}</option>
+                </select>
+              </label>
+            </div>
+          </details>
 
-        <div class="space-y-3 rounded-[1.4rem] border border-[var(--line)] bg-black/20 p-4">
-          <p class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.search.save_dialog.attach_sources') }}
-          </p>
-          <div class="grid gap-2 sm:grid-cols-2">
-            <label
-              v-for="source in dashboardStore.enabledSources"
-              :key="source.id"
-              class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--line)] p-3 text-sm text-[var(--text)]"
-            >
-              <input
-                :checked="searchStore.liveSearchSaveForm.sourceScopeIds.includes(source.id)"
-                type="checkbox"
-                class="mt-1 accent-[var(--accent)]"
-                @change="searchStore.toggleLiveSearchSource(source.id)"
-              />
-              <span>
-                <span class="block">{{ source.name }}</span>
-                <span class="mt-1 block text-xs text-[var(--muted)]"
-                  >{{ source.kind }} / {{ categoryLabel(source) }}</span
-                >
-              </span>
-            </label>
-          </div>
+          <details v-if="searchStore.liveSearchSaveForm.createScope" class="terminal-disclosure" open>
+            <summary>{{ t('dashboard.search.save_dialog.section_scope') }}</summary>
+            <div class="terminal-disclosure__body grid gap-3 sm:grid-cols-2">
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.scope_name') }}
+                </span>
+                <input
+                  v-model="searchStore.liveSearchSaveForm.scopeName"
+                  class="terminal-input"
+                  :placeholder="searchStore.fallbackLiveScopeName()"
+                />
+              </label>
+              <label class="space-y-2 sm:col-span-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.scope_description') }}
+                </span>
+                <textarea
+                  v-model="searchStore.liveSearchSaveForm.scopeDescription"
+                  class="terminal-textarea min-h-[80px]"
+                />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.search.save_dialog.scope_kind') }}
+                </span>
+                <select v-model="searchStore.liveSearchSaveForm.scopeKind" class="terminal-select">
+                  <option value="public">{{ t('dashboard.search.save_dialog.kind_public') }}</option>
+                  <option value="research">{{ t('dashboard.search.save_dialog.kind_research') }}</option>
+                  <option value="custom">{{ t('dashboard.search.save_dialog.kind_custom') }}</option>
+                </select>
+              </label>
+              <article class="rounded-2xl border border-[var(--line)] bg-black/25 p-4 text-sm text-[var(--muted)]">
+                <p>
+                  {{ t('dashboard.search.save_dialog.derived_lookback') }}
+                  <span class="text-[var(--text)]">{{
+                    t('dashboard.search.save_dialog.days_suffix', {
+                      days: deriveLookbackDays(searchStore.liveSearchForm.timeRange),
+                    })
+                  }}</span>
+                </p>
+              </article>
+            </div>
+          </details>
+
+          <details class="terminal-disclosure" open>
+            <summary>{{ t('dashboard.search.save_dialog.attach_sources') }}</summary>
+            <div class="terminal-disclosure__body grid gap-2 sm:grid-cols-2">
+              <label
+                v-for="source in dashboardStore.enabledSources"
+                :key="source.id"
+                class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--line)] p-3 text-sm text-[var(--text)]"
+              >
+                <input
+                  :checked="searchStore.liveSearchSaveForm.sourceScopeIds.includes(source.id)"
+                  type="checkbox"
+                  class="mt-1 accent-[var(--accent)]"
+                  @change="searchStore.toggleLiveSearchSource(source.id)"
+                />
+                <span>
+                  <span class="block">{{ source.name }}</span>
+                  <span class="mt-1 block text-xs text-[var(--muted)]"
+                    >{{ source.kind }} / {{ categoryLabel(source) }}</span
+                  >
+                </span>
+              </label>
+            </div>
+          </details>
         </div>
 
         <div class="flex flex-wrap justify-end gap-2">

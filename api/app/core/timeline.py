@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
-import re
 from datetime import date as date_cls
 from datetime import time as time_cls
 
-import httpx
 from django.conf import settings
 from django.utils import timezone
 
+from .ai_client import AIUnavailable as TimelineUnavailable
+from .ai_client import call_swissai_chat, extract_json
 from .models import SearchTopic, TopicTimelineSummary
 
 MAX_RESULTS_FOR_TIMELINE = 40
@@ -31,12 +30,6 @@ SYSTEM_PROMPT = (
     "entry). If no concrete dated event can be found, respond with []."
 )
 
-_JSON_ARRAY_RE = re.compile(r"\[.*\]", re.DOTALL)
-
-
-class TimelineUnavailable(RuntimeError):
-    pass
-
 
 def _format_result_block(result) -> str:
     locations = list(result.locations.all())
@@ -57,53 +50,8 @@ def _format_result_block(result) -> str:
     return "\n".join(lines)
 
 
-def _call_swissai_chat(messages: list[dict]) -> str:
-    api_key = settings.SWISSAI_API_KEY
-    if not api_key:
-        raise TimelineUnavailable("SwissAI API key is not configured.")
-
-    try:
-        response = httpx.post(
-            f"{settings.SWISSAI_BASE_URL}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": settings.SWISSAI_MODEL,
-                "messages": messages,
-                "temperature": 0.1,
-                "max_tokens": 3000,
-            },
-            timeout=settings.SWISSAI_TIMEOUT_S,
-        )
-        response.raise_for_status()
-    except httpx.HTTPError as exc:
-        raise TimelineUnavailable("SwissAI request failed.") from exc
-
-    payload = response.json()
-    try:
-        return payload["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise TimelineUnavailable("SwissAI returned an unexpected response.") from exc
-
-
 def _parse_timeline_entries(raw_text: str) -> list[dict]:
-    text = raw_text.strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
-        text = re.sub(r"```$", "", text).strip()
-
-    try:
-        parsed = json.loads(text)
-    except json.JSONDecodeError:
-        match = _JSON_ARRAY_RE.search(text)
-        if not match:
-            raise TimelineUnavailable("SwissAI response was not valid JSON.")
-        parsed = json.loads(match.group(0))
-
-    if not isinstance(parsed, list):
-        raise TimelineUnavailable("SwissAI response was not a JSON array.")
+    parsed = extract_json(raw_text, expect=list)
 
     entries = []
     for index, item in enumerate(parsed):
@@ -177,7 +125,7 @@ def generate_topic_timeline(topic: SearchTopic) -> TopicTimelineSummary:
     blocks = "\n---\n".join(_format_result_block(result) for result in results)
     user_prompt = f"Topic: {topic.name}\n\nSearch results:\n{blocks}"
 
-    raw_content = _call_swissai_chat(
+    raw_content = call_swissai_chat(
         [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt},

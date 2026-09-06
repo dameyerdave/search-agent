@@ -148,6 +148,15 @@ class SourceScopeSerializer(serializers.ModelSerializer):
         return attrs
 
 
+CATEGORY_TERM_KEYS = ("keywords", "people", "companies", "locations", "regions", "events")
+
+
+class OriginResultSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    url = serializers.URLField()
+
+
 class SearchTopicSerializer(serializers.ModelSerializer):
     queries = serializers.ListField(child=serializers.CharField(), allow_empty=False)
     required_terms = serializers.ListField(
@@ -156,6 +165,7 @@ class SearchTopicSerializer(serializers.ModelSerializer):
     excluded_terms = serializers.ListField(
         child=serializers.CharField(), allow_empty=True, required=False
     )
+    category_terms = serializers.DictField(required=False)
     source_scopes = SourceScopeSerializer(many=True, read_only=True)
     source_scope_ids = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -167,6 +177,8 @@ class SearchTopicSerializer(serializers.ModelSerializer):
     new_results_count = serializers.IntegerField(read_only=True)
     query_preview = serializers.SerializerMethodField()
     schedule_description = serializers.CharField(read_only=True)
+    origin_kind = serializers.CharField(read_only=True)
+    origin_result = OriginResultSerializer(read_only=True, allow_null=True)
 
     class Meta:
         model = SearchTopic
@@ -179,11 +191,15 @@ class SearchTopicSerializer(serializers.ModelSerializer):
             "queries",
             "required_terms",
             "excluded_terms",
+            "category_terms",
             "lookback_days",
             "schedule_every",
             "schedule_unit",
             "max_results_per_query",
             "notes",
+            "include_in_press_review",
+            "origin_kind",
+            "origin_result",
             "source_scopes",
             "source_scope_ids",
             "result_count",
@@ -219,13 +235,23 @@ class SearchTopicSerializer(serializers.ModelSerializer):
     def validate_excluded_terms(self, value):
         return clean_string_list(value)
 
+    def validate_category_terms(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("category_terms must be an object.")
+        return {key: clean_string_list(value.get(key)) for key in CATEGORY_TERM_KEYS}
+
     def get_query_preview(self, obj):
         required = clean_string_list(obj.required_terms)
         excluded = clean_string_list(obj.excluded_terms)
+        category_groups = [
+            clean_string_list(terms) for terms in (obj.category_terms or {}).values() if clean_string_list(terms)
+        ]
         preview = []
         for query in clean_string_list(obj.queries):
             parts = [query]
             parts.extend(required)
+            for terms in category_groups:
+                parts.append(terms[0] if len(terms) == 1 else f"({' OR '.join(terms)})")
             parts.extend([f"-{term}" for term in excluded])
             preview.append(" ".join(parts))
         return preview
@@ -279,115 +305,6 @@ class SearchProviderConfigSerializer(serializers.ModelSerializer):
         return load_searxng_language_options()
 
 
-class SearxNGSearchRequestSerializer(serializers.Serializer):
-    q = serializers.CharField()
-    categories = serializers.ListField(
-        child=serializers.CharField(),
-        allow_empty=True,
-        required=False,
-    )
-    use_all_categories = serializers.BooleanField(required=False, default=True)
-    use_all_engines = serializers.BooleanField(required=False, default=True)
-    engines = serializers.ListField(
-        child=serializers.CharField(),
-        allow_empty=True,
-        required=False,
-    )
-    languages = serializers.ListField(
-        child=serializers.CharField(),
-        allow_empty=True,
-        required=False,
-    )
-    safesearch = serializers.IntegerField(required=False, min_value=0, max_value=2)
-    time_range = serializers.CharField(required=False, allow_blank=True)
-    result_order = serializers.ChoiceField(
-        required=False,
-        choices=SourceScope.ResultOrder.choices,
-        default=SourceScope.ResultOrder.RELEVANCE,
-    )
-    pageno = serializers.IntegerField(required=False, min_value=1, default=1)
-    max_results = serializers.IntegerField(required=False, min_value=1, max_value=50, default=10)
-    include_domains = serializers.ListField(
-        child=serializers.CharField(),
-        allow_empty=True,
-        required=False,
-    )
-    exclude_domains = serializers.ListField(
-        child=serializers.CharField(),
-        allow_empty=True,
-        required=False,
-    )
-    extra_params = serializers.JSONField(required=False)
-
-    def validate_categories(self, value):
-        return clean_string_list(value)
-
-    def validate_engines(self, value):
-        from .services import load_searxng_engines, normalize_searxng_engines
-
-        engines = normalize_searxng_engines(value)
-        available_engines = set(load_searxng_engines())
-        if available_engines:
-            invalid = [engine for engine in engines if engine not in available_engines]
-            if invalid:
-                raise serializers.ValidationError(
-                    "Choose engines from the available SearxNG engine list."
-                )
-        return engines
-
-    def validate_include_domains(self, value):
-        return clean_string_list(value)
-
-    def validate_exclude_domains(self, value):
-        return clean_string_list(value)
-
-    def validate_time_range(self, value):
-        allowed = {"", "day", "month", "year"}
-        if value not in allowed:
-            raise serializers.ValidationError("Use day, month, year, or leave blank.")
-        return value
-
-    def validate_languages(self, value):
-        from .services import load_searxng_locales, normalize_searxng_languages
-
-        languages = normalize_searxng_languages(value)
-
-        locales = load_searxng_locales()
-        if locales:
-            invalid = [language for language in languages if language not in locales]
-            if invalid:
-                raise serializers.ValidationError(
-                    "Choose languages from the available SearxNG language list."
-                )
-        return languages
-
-    def validate_extra_params(self, value):
-        if value in (None, ""):
-            return {}
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("extra_params must be a JSON object.")
-
-        cleaned = {}
-        for key, raw_value in value.items():
-            clean_key = str(key).strip()
-            if not clean_key or raw_value in (None, ""):
-                continue
-            cleaned[clean_key] = raw_value
-        return cleaned
-
-    def validate(self, attrs):
-        attrs = super().validate(attrs)
-        if not attrs.get("use_all_categories", True) and not attrs.get("categories"):
-            raise serializers.ValidationError(
-                {"categories": "Add at least one category or search across all categories."}
-            )
-        if not attrs.get("use_all_engines", True) and not attrs.get("engines"):
-            raise serializers.ValidationError(
-                {"engines": "Add at least one engine or search across all available engines."}
-            )
-        return attrs
-
-
 class SearchRunSerializer(serializers.ModelSerializer):
     topic_name = serializers.CharField(source="topic.name", read_only=True)
 
@@ -436,6 +353,8 @@ class SearchResultSerializer(serializers.ModelSerializer):
             "snippet",
             "content",
             "favicon_url",
+            "image_url",
+            "ai_summary",
             "score",
             "published_at",
             "matched_queries",

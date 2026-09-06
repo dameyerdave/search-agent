@@ -303,21 +303,21 @@ onUnmounted(() => {
     <div class="absolute top-3 right-3 flex flex-col gap-2" @pointerdown.stop @wheel.stop>
       <button
         type="button"
-        class="terminal-button terminal-button-secondary h-10 w-10 p-0 text-lg"
+        class="terminal-button terminal-button-secondary h-11 w-11 p-0 text-lg"
         @click.stop="zoomIn()"
       >
         +
       </button>
       <button
         type="button"
-        class="terminal-button terminal-button-secondary h-10 w-10 p-0 text-lg"
+        class="terminal-button terminal-button-secondary h-11 w-11 p-0 text-lg"
         @click.stop="zoomOut()"
       >
         -
       </button>
       <button
         type="button"
-        class="terminal-button terminal-button-secondary px-4 py-2 text-[11px]"
+        class="terminal-button terminal-button-secondary min-h-11 px-4 py-2 text-[11px]"
         @click.stop="fitToMarkers"
       >
         {{ t('map.controls.fit') }}

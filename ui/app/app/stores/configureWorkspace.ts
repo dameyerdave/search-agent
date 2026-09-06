@@ -1,6 +1,8 @@
 import { getErrorMessage } from 'errors'
-import type { SearchTopic, SourceScope } from 'types/search-agent'
+import type { SearchTopic, SourceScope, TopicCategorySuggestion } from 'types/search-agent'
 import { joinLines, normalizeLanguageCodes, splitLines } from 'utils/dashboard'
+
+const CATEGORY_KEYS = ['keywords', 'people', 'companies', 'locations', 'regions', 'events'] as const
 
 export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore', () => {
   const api = useSearchAgentApi()
@@ -14,12 +16,19 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
     queries: '"data platform"\n"research data exchange"\n"research data exchange format"',
     requiredTerms: '',
     excludedTerms: '',
+    keywords: '',
+    people: '',
+    companies: '',
+    locations: '',
+    regions: '',
+    events: '',
     lookbackDays: 30,
     scheduleEvery: 1,
     scheduleUnit: 'days' as 'minutes' | 'hours' | 'days' | 'weeks',
     maxResultsPerQuery: 10,
     notes: '',
     enabled: true,
+    includeInPressReview: true,
     sourceScopeIds: [] as number[],
   })
 
@@ -51,6 +60,7 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
   const editingSourceId = ref<number | null>(null)
   const isSavingTopic = ref(false)
   const isSavingSource = ref(false)
+  const isSuggestingCategories = ref(false)
 
   const resetTopicForm = () => {
     topicEditorMode.value = 'create'
@@ -78,12 +88,19 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
       queries: joinLines(topic.queries),
       requiredTerms: joinLines(topic.required_terms),
       excludedTerms: joinLines(topic.excluded_terms),
+      keywords: joinLines(topic.category_terms?.keywords ?? []),
+      people: joinLines(topic.category_terms?.people ?? []),
+      companies: joinLines(topic.category_terms?.companies ?? []),
+      locations: joinLines(topic.category_terms?.locations ?? []),
+      regions: joinLines(topic.category_terms?.regions ?? []),
+      events: joinLines(topic.category_terms?.events ?? []),
       lookbackDays: topic.lookback_days,
       scheduleEvery: topic.schedule_every,
       scheduleUnit: topic.schedule_unit,
       maxResultsPerQuery: topic.max_results_per_query,
       notes: topic.notes,
       enabled: topic.enabled,
+      includeInPressReview: topic.include_in_press_review,
       sourceScopeIds: topic.source_scopes.map((scope) => scope.id),
     })
   }
@@ -161,11 +178,20 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
       queries: splitLines(topicForm.queries),
       required_terms: splitLines(topicForm.requiredTerms),
       excluded_terms: splitLines(topicForm.excludedTerms),
+      category_terms: {
+        keywords: splitLines(topicForm.keywords),
+        people: splitLines(topicForm.people),
+        companies: splitLines(topicForm.companies),
+        locations: splitLines(topicForm.locations),
+        regions: splitLines(topicForm.regions),
+        events: splitLines(topicForm.events),
+      },
       lookback_days: Number(topicForm.lookbackDays),
       schedule_every: Number(topicForm.scheduleEvery),
       schedule_unit: topicForm.scheduleUnit,
       max_results_per_query: Number(topicForm.maxResultsPerQuery),
       notes: topicForm.notes.trim(),
+      include_in_press_review: topicForm.includeInPressReview,
       source_scope_ids: topicForm.sourceScopeIds,
     }
 
@@ -182,6 +208,40 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
       toast.add({ title: getErrorMessage(error) || t('dashboard.errors.topic_save_failed'), color: 'error' })
     } finally {
       isSavingTopic.value = false
+    }
+  }
+
+  const suggestCategories = async () => {
+    const description = topicForm.description.trim()
+    const queries = splitLines(topicForm.queries)
+    if (!description && !queries.length) {
+      toast.add({ title: t('dashboard.configure.topic_editor.suggest_needs_input'), color: 'warning' })
+      return
+    }
+
+    isSuggestingCategories.value = true
+    try {
+      const suggestion = await api.post<TopicCategorySuggestion>('/api/v1/topics/suggest_categories/', {
+        description,
+        queries,
+      })
+      for (const key of CATEGORY_KEYS) {
+        topicForm[key] = joinLines(suggestion.category_terms?.[key] ?? [])
+      }
+      if (!topicForm.name.trim() && suggestion.name) {
+        topicForm.name = suggestion.name
+      }
+      if (!description && suggestion.description) {
+        topicForm.description = suggestion.description
+      }
+      toast.add({ title: t('dashboard.configure.topic_editor.suggest_success'), color: 'success' })
+    } catch (error: unknown) {
+      toast.add({
+        title: getErrorMessage(error) || t('dashboard.configure.topic_editor.suggest_failed'),
+        color: 'error',
+      })
+    } finally {
+      isSuggestingCategories.value = false
     }
   }
 
@@ -251,6 +311,7 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
     editingSourceId,
     isSavingTopic,
     isSavingSource,
+    isSuggestingCategories,
     resetTopicForm,
     resetSourceForm,
     openTopicEditor,
@@ -263,6 +324,7 @@ export const useConfigureWorkspaceStore = defineStore('configureWorkspaceStore',
     selectAllSourceLanguages,
     clearSourceLanguages,
     saveTopic,
+    suggestCategories,
     saveSource,
     deleteSource,
   }

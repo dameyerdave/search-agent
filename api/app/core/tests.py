@@ -157,7 +157,7 @@ class SchedulerTaskTests(OwnedTestCase):
 
 
 class DirectSearxNGSearchTests(OwnedTestCase):
-    @patch("core.services.load_searxng_categories", return_value=["general", "science", "news"])
+    @patch("core.services.searxng_client.load_searxng_categories", return_value=["general", "science", "news"])
     def test_build_searxng_params_uses_all_categories_by_default(self, _categories_mock):
         topic = SearchTopic.objects.create(
             owner=self.user,
@@ -234,7 +234,7 @@ class DirectSearxNGSearchTests(OwnedTestCase):
         self.assertEqual(params["engines"], "google,arxiv")
 
     @patch(
-        "core.services.load_searxng_config",
+        "core.services.searxng_client.load_searxng_config",
         return_value={
             "engines": [
                 {"name": "google", "enabled": True},
@@ -246,14 +246,14 @@ class DirectSearxNGSearchTests(OwnedTestCase):
     def test_load_searxng_engines_returns_enabled_engine_names(self, _config_mock):
         self.assertEqual(load_searxng_engines(), ["duckduckgo", "google"])
 
-    @patch("core.services.load_searxng_engines", return_value=["duckduckgo", "google"])
+    @patch("core.services.searxng_client.load_searxng_engines", return_value=["duckduckgo", "google"])
     def test_normalize_searxng_engines_matches_available_engine_names(self, _engines_mock):
         self.assertEqual(
             normalize_searxng_engines(["Google", "duckduckgo", "google"]),
             ["google", "duckduckgo"],
         )
 
-    @patch("core.services.load_searxng_locales", return_value={"en": "English", "de": "Deutsch"})
+    @patch("core.services.searxng_client.load_searxng_locales", return_value={"en": "English", "de": "Deutsch"})
     def test_build_searxng_params_normalizes_language_to_available_locale(self, _locales_mock):
         topic = SearchTopic.objects.create(
             owner=self.user,
@@ -309,7 +309,7 @@ class DirectSearxNGSearchTests(OwnedTestCase):
 
         self.assertEqual([item["title"] for item in ordered], ["High", "Middle", "Low"])
 
-    @patch("core.services.load_searxng_categories", return_value=["general", "science", "news"])
+    @patch("core.services.searxng_client.load_searxng_categories", return_value=["general", "science", "news"])
     def test_build_direct_searxng_params_uses_all_categories_by_default(self, _categories_mock):
         params = build_direct_searxng_params(
             {
@@ -321,7 +321,7 @@ class DirectSearxNGSearchTests(OwnedTestCase):
 
         self.assertEqual(params["categories"], "general,science,news")
 
-    @patch("core.services.load_searxng_locales", return_value={"en": "English", "de": "Deutsch"})
+    @patch("core.services.searxng_client.load_searxng_locales", return_value={"en": "English", "de": "Deutsch"})
     def test_build_direct_searxng_params_normalizes_language_to_available_locale(
         self, _locales_mock
     ):
@@ -335,7 +335,7 @@ class DirectSearxNGSearchTests(OwnedTestCase):
         self.assertEqual(params["languages"], ["en"])
 
     @patch(
-        "core.services.load_searxng_locales",
+        "core.services.searxng_client.load_searxng_locales",
         return_value={"de": "Deutsch", "en": "English"},
     )
     def test_load_searxng_language_options_returns_sorted_choices(self, _locales_mock):
@@ -347,14 +347,14 @@ class DirectSearxNGSearchTests(OwnedTestCase):
             ],
         )
 
-    @patch("core.services.load_searxng_locales", return_value={"en": "English", "el-GR": "Greek"})
+    @patch("core.services.searxng_client.load_searxng_locales", return_value={"en": "English", "el-GR": "Greek"})
     def test_normalize_searxng_language_matches_case_and_base_language(self, _locales_mock):
         self.assertEqual(normalize_searxng_language("EL-gr"), "el-GR")
         self.assertEqual(normalize_searxng_language("en-US"), "en")
 
     @override_settings(SEARXNG_BASE_URL="http://searxng:8080", SEARXNG_TIMEOUT_S=5)
-    @patch("core.services.load_searxng_locales", return_value={"en": "English"})
-    @patch("core.services.SearxNGClient.search")
+    @patch("core.services.searxng_client.load_searxng_locales", return_value={"en": "English"})
+    @patch("core.services.searxng_client.SearxNGClient.search")
     def test_run_direct_searxng_search_filters_domains_and_keeps_extra_params(
         self,
         search_mock,
@@ -422,7 +422,7 @@ class DirectSearxNGSearchTests(OwnedTestCase):
         self.assertEqual(response["unresponsive_engines"], ["duckduckgo"])
 
     @override_settings(SEARXNG_BASE_URL="http://searxng:8080", SEARXNG_TIMEOUT_S=5)
-    @patch("core.services.SearxNGClient.search")
+    @patch("core.services.searxng_client.SearxNGClient.search")
     def test_run_direct_searxng_search_orders_results_by_newest_first(self, search_mock):
         SearchProviderConfig.load()
         search_mock.return_value = {
@@ -464,10 +464,10 @@ class DirectSearxNGSearchTests(OwnedTestCase):
 
     @override_settings(SEARXNG_BASE_URL="http://searxng:8080", SEARXNG_TIMEOUT_S=30)
     @patch(
-        "core.services.load_searxng_categories",
+        "core.services.searxng_client.load_searxng_categories",
         return_value=["general", "web", "news", "science", "files"],
     )
-    @patch("core.services.SearxNGClient.search")
+    @patch("core.services.searxng_client.SearxNGClient.search")
     def test_run_direct_searxng_search_returns_partial_results_after_batch_timeout(
         self,
         search_mock,

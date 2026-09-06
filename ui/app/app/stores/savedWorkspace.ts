@@ -1,6 +1,8 @@
 import { getErrorMessage } from 'errors'
 import type { PaginatedResponse, SavedFolder, SearchResult } from 'types/search-agent'
 
+const MAX_AUTO_LOAD_SAVED = 200
+
 export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
   const api = useSearchAgentApi()
   const { t } = useI18n()
@@ -9,18 +11,23 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
   const folders = ref<SavedFolder[]>([])
   const selectedFolderId = ref<number | 'unfiled' | null>(null)
   const folderResultsPage = ref<PaginatedResponse<SearchResult> | null>(null)
+  const accumulatedFolderResults = ref<SearchResult[]>([])
+  const currentFolderPage = ref(1)
   const isLoadingFolders = ref(false)
   const isLoadingResults = ref(false)
+  const isLoadingMoreResults = ref(false)
   const editingFolderId = ref<number | null>(null)
   const editingFolderName = ref('')
   const newFolderName = ref('')
   const isCreatingFolder = ref(false)
 
-  const folderResults = computed(() => folderResultsPage.value?.results ?? [])
+  const folderResults = computed(() => accumulatedFolderResults.value)
+  const canLoadMoreFolderResults = computed(() => Boolean(folderResultsPage.value?.next))
+  const autoLoadCapReachedSaved = computed(() => accumulatedFolderResults.value.length >= MAX_AUTO_LOAD_SAVED)
 
   const selectedFolder = computed(() =>
     typeof selectedFolderId.value === 'number'
-      ? folders.value.find((f) => f.id === selectedFolderId.value) ?? null
+      ? (folders.value.find((f) => f.id === selectedFolderId.value) ?? null)
       : null,
   )
 
@@ -36,22 +43,42 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
     }
   }
 
-  const loadFolderResults = async (folderId: number | 'unfiled' | null) => {
-    selectedFolderId.value = folderId
-    isLoadingResults.value = true
+  const loadFolderResults = async (folderId: number | 'unfiled' | null, page = 1, append = false) => {
+    if (!append) selectedFolderId.value = folderId
+    if (append) isLoadingMoreResults.value = true
+    else isLoadingResults.value = true
     try {
-      const query: Record<string, string | number | boolean | undefined> =
-        folderId === 'unfiled'
+      const query: Record<string, string | number | boolean | undefined> = {
+        ...(folderId === 'unfiled'
           ? { folder: 'unfiled' }
           : folderId !== null
             ? { folder: folderId, is_saved: true }
-            : { is_saved: true }
-      folderResultsPage.value = await api.get<PaginatedResponse<SearchResult>>('/api/v1/results/', query)
+            : { is_saved: true }),
+        page,
+      }
+      const response = await api.get<PaginatedResponse<SearchResult>>('/api/v1/results/', query)
+      folderResultsPage.value = response
+      currentFolderPage.value = page
+      if (append) {
+        const existingIds = new Set(accumulatedFolderResults.value.map((r) => r.id))
+        accumulatedFolderResults.value = [
+          ...accumulatedFolderResults.value,
+          ...response.results.filter((r) => !existingIds.has(r.id)),
+        ]
+      } else {
+        accumulatedFolderResults.value = response.results
+      }
     } catch (error: unknown) {
       toast.add({ title: getErrorMessage(error) || t('saved.errors.load_results_failed'), color: 'error' })
     } finally {
       isLoadingResults.value = false
+      isLoadingMoreResults.value = false
     }
+  }
+
+  const loadMoreFolderResults = async () => {
+    if (!canLoadMoreFolderResults.value || isLoadingMoreResults.value) return
+    await loadFolderResults(selectedFolderId.value, currentFolderPage.value + 1, true)
   }
 
   const createFolder = async (name: string) => {
@@ -59,9 +86,7 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
     if (!trimmed) return null
     try {
       const folder = await api.post<SavedFolder>('/api/v1/folders/', { name: trimmed })
-      folders.value = [...folders.value, folder].sort((a, b) =>
-        a.name.localeCompare(b.name),
-      )
+      folders.value = [...folders.value, folder].sort((a, b) => a.name.localeCompare(b.name))
       return folder
     } catch (error: unknown) {
       toast.add({ title: getErrorMessage(error) || t('saved.errors.create_folder_failed'), color: 'error' })
@@ -89,6 +114,7 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
       if (selectedFolderId.value === id) {
         selectedFolderId.value = null
         folderResultsPage.value = null
+        accumulatedFolderResults.value = []
       }
     } catch (error: unknown) {
       toast.add({ title: getErrorMessage(error) || t('saved.errors.delete_folder_failed'), color: 'error' })
@@ -105,11 +131,7 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
       }
       await api.post<SearchResult>(`/api/v1/results/${resultId}/move/`, body)
       // Remove result from current view if it moved to a different folder
-      if (folderResultsPage.value) {
-        folderResultsPage.value.results = folderResultsPage.value.results.filter(
-          (r) => r.id !== resultId,
-        )
-      }
+      accumulatedFolderResults.value = accumulatedFolderResults.value.filter((r) => r.id !== resultId)
       await loadFolders()
     } catch (error: unknown) {
       toast.add({ title: getErrorMessage(error) || t('saved.errors.move_result_failed'), color: 'error' })
@@ -119,10 +141,8 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
   const unsaveResult = async (resultId: number) => {
     try {
       await api.post(`/api/v1/results/${resultId}/unsave/`, {})
+      accumulatedFolderResults.value = accumulatedFolderResults.value.filter((r) => r.id !== resultId)
       if (folderResultsPage.value) {
-        folderResultsPage.value.results = folderResultsPage.value.results.filter(
-          (r) => r.id !== resultId,
-        )
         folderResultsPage.value.count = Math.max(0, folderResultsPage.value.count - 1)
       }
       await loadFolders()
@@ -168,6 +188,8 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
   const resetState = () => {
     folders.value = []
     folderResultsPage.value = null
+    accumulatedFolderResults.value = []
+    currentFolderPage.value = 1
     selectedFolderId.value = null
   }
 
@@ -176,6 +198,9 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
     selectedFolderId,
     folderResults,
     folderResultsPage,
+    canLoadMoreFolderResults,
+    autoLoadCapReachedSaved,
+    isLoadingMoreResults,
     selectedFolder,
     isLoadingFolders,
     isLoadingResults,
@@ -185,6 +210,7 @@ export const useSavedWorkspaceStore = defineStore('savedWorkspaceStore', () => {
     isCreatingFolder,
     loadFolders,
     loadFolderResults,
+    loadMoreFolderResults,
     createFolder,
     renameFolder,
     deleteFolder,

@@ -1,9 +1,12 @@
+from datetime import timedelta
+
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from .ai_client import AIUnavailable
 from .map_serializers import SearchResultMapResponseSerializer
 from .models import PushSubscription, SavedFolder, SearchProviderConfig, SearchResult, SearchRun, SearchTopic, SourceScope
 from .querysets import owned_folders, owned_results, owned_runs, owned_source_scopes, owned_topics
@@ -11,6 +14,7 @@ from .tasks import run_topic_search_task
 from .result_locations import build_result_location_map_payload
 from .timeline import TimelineUnavailable, generate_topic_timeline
 from .timeline_serializers import TopicTimelineSummarySerializer
+from .topic_extraction import derive_topic_from_result, suggest_topic_from_text
 from .serializers import (
     PushSubscriptionSerializer,
     SavedFolderSerializer,
@@ -21,6 +25,8 @@ from .serializers import (
     SourceScopeSerializer,
 )
 from .services import normalize_url, run_topic_search
+
+PRESS_REVIEW_WINDOW_DAYS = 3
 
 
 def _resolve_folder(request, user):
@@ -100,6 +106,22 @@ class SearchTopicViewSet(viewsets.ModelViewSet):
                 return Response(None)
         return Response(TopicTimelineSummarySerializer(summary).data)
 
+    @action(detail=False, methods=["post"], url_path="suggest_categories")
+    def suggest_categories(self, request):
+        description = (request.data.get("description") or "").strip()
+        queries = request.data.get("queries") or []
+        text = "\n".join([description, *[str(q) for q in queries if str(q).strip()]]).strip()
+        if not text:
+            return Response(
+                {"error": "Provide a description or at least one query to suggest categories from."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            suggestion = suggest_topic_from_text(text)
+        except AIUnavailable as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(suggestion)
+
 
 class SearchProviderConfigViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
@@ -177,13 +199,73 @@ class SearchResultViewSet(viewsets.ReadOnlyModelViewSet):
     def acknowledge(self, request):
         ids = request.data.get("ids") or []
         topic_slug = request.data.get("topic")
+        press_review = request.data.get("press_review")
         queryset = owned_results(request.user).filter(is_new=True)
         if ids:
             queryset = queryset.filter(id__in=ids)
         if topic_slug:
             queryset = queryset.filter(topic__slug=topic_slug)
+        if press_review:
+            queryset = queryset.filter(topic__include_in_press_review=True)
         updated = queryset.update(is_new=False)
         return Response({"acknowledged": updated})
+
+    @action(detail=False, methods=["get"], url_path="press_review")
+    def press_review(self, request):
+        window_start = timezone.now() - timedelta(days=PRESS_REVIEW_WINDOW_DAYS)
+        queryset = (
+            owned_results(request.user)
+            .filter(topic__include_in_press_review=True, first_seen_at__gte=window_start)
+            .order_by("-first_seen_at")
+        )
+        page = self.paginate_queryset(queryset)
+        serializer = SearchResultSerializer(page, many=True, context={"request": request})
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def follow(self, request, pk=None):
+        result = self.get_object()
+        try:
+            suggestion = derive_topic_from_result(result)
+        except AIUnavailable as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+
+        base_name = (suggestion["name"] or f"Follow-up: {result.title}").strip()[:170] or "Followed topic"
+        name = base_name
+        suffix = 2
+        while SearchTopic.objects.filter(owner=request.user, name=name).exists():
+            name = f"{base_name} ({suffix})"[:180]
+            suffix += 1
+
+        if result.topic_id:
+            source_scopes = list(result.topic.source_scopes.filter(enabled=True))
+        else:
+            source_scopes = list(owned_source_scopes(request.user).filter(enabled=True))
+        if not source_scopes:
+            return Response(
+                {"error": "No enabled source scopes available to attach to the new topic."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        topic = SearchTopic.objects.create(
+            owner=request.user,
+            name=name,
+            description=suggestion["description"],
+            queries=suggestion["queries"] or [result.title[:180]],
+            category_terms=suggestion["category_terms"],
+            lookback_days=30,
+            schedule_every=1,
+            schedule_unit=SearchTopic.ScheduleUnit.DAYS,
+            include_in_press_review=True,
+            origin_kind=SearchTopic.OriginKind.FOLLOWED,
+            origin_result=result,
+        )
+        topic.source_scopes.set(source_scopes)
+        run_topic_search_task.delay(topic.pk)
+        return Response(
+            SearchTopicSerializer(topic, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=True, methods=["post"])
     def save(self, request, pk=None):

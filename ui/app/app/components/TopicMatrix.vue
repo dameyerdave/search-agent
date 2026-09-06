@@ -59,8 +59,21 @@ const lookbackLabel = (topic: SearchTopic) =>
                   <span class="pill" :class="statusClass(topic.last_run_status)">
                     {{ t(`dashboard.common.status.${summarizeStatus(topic.last_run_status)}`) }}
                   </span>
+                  <span v-if="topic.origin_kind === 'followed'" class="pill text-[var(--accent)]">
+                    <UIcon name="i-heroicons-signal" class="size-3" />
+                    {{ t('dashboard.configure.topic_editor.followed_from') }}
+                  </span>
                 </div>
                 <h2 class="text-xl text-white">{{ topic.name }}</h2>
+                <a
+                  v-if="topic.origin_result"
+                  :href="topic.origin_result.url"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="block max-w-md truncate text-xs text-[var(--muted)] hover:text-[var(--accent)]"
+                >
+                  ↳ {{ topic.origin_result.title }}
+                </a>
               </div>
 
               <div class="sm:min-w-[110px] sm:text-right">

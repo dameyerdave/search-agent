@@ -9,6 +9,7 @@ const pushStore = usePushNotificationsStore()
 useExploreWorkspaceStore()
 useRunsWorkspaceStore()
 useSavedWorkspaceStore()
+usePressReviewWorkspaceStore()
 
 watch(
   () => dashboardStore.totalNewResults,
@@ -42,16 +43,18 @@ onMounted(() => {
       <NuxtRouteAnnouncer />
       <PullToRefresh />
       <PwaInstallButton />
+      <WorkspaceTabNav v-if="!dashboardStore.isBootstrappingAuth" />
 
-      <main class="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-3 px-3 pt-3 pb-20 sm:gap-5 sm:px-6 sm:pt-5 sm:pb-24 lg:px-8">
+      <main
+        class="mx-auto flex min-h-screen max-w-[1500px] flex-col gap-3 px-3 pt-3 pb-28 sm:gap-5 sm:px-6 sm:pt-5 lg:px-8"
+      >
         <DashboardHeader />
         <DashboardStatusBanner />
 
         <template v-if="!dashboardStore.isBootstrappingAuth">
-          <WorkspaceTabNav />
-
           <SearchWorkspace />
           <ExploreWorkspace />
+          <PressReviewWorkspace />
           <SavedWorkspace />
           <ConfigureWorkspace />
           <RunsWorkspace />

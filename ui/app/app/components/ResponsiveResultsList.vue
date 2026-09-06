@@ -12,9 +12,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   save: [id: number, title: string, folderId: number | null, newFolderName: string]
   unsave: [id: number]
+  follow: [result: SearchResult]
 }>()
 
-const previewText = (result: SearchResult) => result.snippet || result.content || t('results.no_preview')
+const previewText = (result: SearchResult) =>
+  result.ai_summary || result.snippet || result.content || t('results.no_preview')
 
 const editingId = ref<number | null>(null)
 const editTitle = ref('')
@@ -28,7 +30,7 @@ const openSaveForm = (result: SearchResult) => {
   editNewFolderName.value = ''
   const suggested = savedStore.suggestFolderName(result)
   const match = savedStore.folders.find((f) => f.name === suggested)
-  editFolderId.value = match ? match.id : (savedStore.folders.length ? null : null)
+  editFolderId.value = match ? match.id : savedStore.folders.length ? null : null
   if (!match && suggested) {
     editNewFolderName.value = suggested
     editFolderId.value = -1
@@ -56,6 +58,8 @@ const cancelSave = () => {
         class="rounded-xl border border-[var(--line)] bg-black/25 p-3"
       >
         <div class="space-y-2">
+          <ResultThumbnail v-if="result.image_url" :src="result.image_url" :alt="result.title" />
+
           <div class="flex flex-wrap items-center gap-1.5">
             <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
               {{ t('results.badges.new') }}
@@ -104,25 +108,43 @@ const cancelSave = () => {
 
           <div v-if="editingId === result.id" class="space-y-2 rounded-xl border border-[var(--line)] bg-black/30 p-3">
             <label class="space-y-1.5">
-              <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('results.save.title_label') }}</span>
-              <input v-model="editTitle" class="terminal-input" @keyup.enter="confirmSave(result)" @keyup.escape="cancelSave" />
+              <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{
+                t('results.save.title_label')
+              }}</span>
+              <input
+                v-model="editTitle"
+                class="terminal-input"
+                @keyup.enter="confirmSave(result)"
+                @keyup.escape="cancelSave"
+              />
             </label>
             <label class="space-y-1.5">
-              <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('results.save.folder_label') }}</span>
+              <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{
+                t('results.save.folder_label')
+              }}</span>
               <select v-model="editFolderId" class="terminal-select">
                 <option :value="null">{{ t('saved.folders.unfiled') }}</option>
                 <option v-for="f in savedStore.folders" :key="f.id" :value="f.id">{{ f.name }}</option>
                 <option :value="-1">{{ t('saved.folders.new_folder_option') }}</option>
               </select>
             </label>
-            <input v-if="isNewFolder" v-model="editNewFolderName" class="terminal-input" :placeholder="t('saved.folders.new_folder_placeholder')" />
+            <input
+              v-if="isNewFolder"
+              v-model="editNewFolderName"
+              class="terminal-input"
+              :placeholder="t('saved.folders.new_folder_placeholder')"
+            />
             <div class="flex gap-2">
-              <button class="terminal-button terminal-button-primary" @click="confirmSave(result)">{{ t('results.save.confirm') }}</button>
-              <button class="terminal-button terminal-button-secondary" @click="cancelSave">{{ t('dashboard.common.buttons.cancel') }}</button>
+              <button class="terminal-button terminal-button-primary" @click="confirmSave(result)">
+                {{ t('results.save.confirm') }}
+              </button>
+              <button class="terminal-button terminal-button-secondary" @click="cancelSave">
+                {{ t('dashboard.common.buttons.cancel') }}
+              </button>
             </div>
           </div>
 
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             <button
               v-if="!result.is_saved"
               class="terminal-button terminal-button-secondary"
@@ -138,6 +160,10 @@ const cancelSave = () => {
             >
               <UIcon name="i-heroicons-bookmark-solid" class="size-3.5" />
               {{ t('results.save.unsave') }}
+            </button>
+            <button class="terminal-button terminal-button-secondary" @click="emit('follow', result)">
+              <UIcon name="i-heroicons-signal" class="size-3.5" />
+              {{ t('results.follow.button') }}
             </button>
           </div>
         </div>
@@ -163,64 +189,84 @@ const cancelSave = () => {
         <tbody>
           <tr v-for="result in props.results" :key="result.id">
             <td>
-              <div class="space-y-2">
-                <div class="flex flex-wrap items-center gap-2">
-                  <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
-                    {{ t('results.badges.new') }}
-                  </span>
-                  <span v-if="result.is_saved" class="pill bg-[rgba(93,255,153,0.06)] text-[var(--accent)]/70">
-                    {{ t('results.badges.saved') }}
-                  </span>
-                  <span v-if="result.domain" class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
-                    {{ result.domain }}
-                  </span>
-                </div>
-                <a
-                  :href="result.url"
-                  target="_blank"
-                  rel="noreferrer"
-                  class="text-base text-white hover:text-[var(--accent)]"
-                >
-                  {{ result.title }}
-                </a>
-                <p class="max-w-3xl text-sm leading-6 text-[var(--muted)]">
-                  {{ previewText(result) }}
-                </p>
-                <div v-if="result.matched_queries.length" class="flex flex-wrap gap-2">
-                  <span
-                    v-for="query in result.matched_queries.slice(0, 3)"
-                    :key="query"
-                    class="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] text-[var(--text)]"
+              <div class="flex gap-3">
+                <ResultThumbnail
+                  v-if="result.image_url"
+                  :src="result.image_url"
+                  :alt="result.title"
+                  class="w-28 shrink-0"
+                />
+                <div class="min-w-0 flex-1 space-y-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span v-if="result.is_new" class="pill bg-[var(--accent-soft)] text-[var(--accent)]">
+                      {{ t('results.badges.new') }}
+                    </span>
+                    <span v-if="result.is_saved" class="pill bg-[rgba(93,255,153,0.06)] text-[var(--accent)]/70">
+                      {{ t('results.badges.saved') }}
+                    </span>
+                    <span v-if="result.domain" class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">
+                      {{ result.domain }}
+                    </span>
+                  </div>
+                  <a
+                    :href="result.url"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="block text-base text-white hover:text-[var(--accent)]"
                   >
-                    {{ query }}
-                  </span>
-                </div>
-                <div v-if="editingId === result.id" class="space-y-2 rounded-xl border border-[var(--line)] bg-black/30 p-3 max-w-lg">
-                  <label class="space-y-1.5">
-                    <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('results.save.title_label') }}</span>
+                    {{ result.title }}
+                  </a>
+                  <p class="max-w-3xl text-sm leading-6 text-[var(--muted)]">
+                    {{ previewText(result) }}
+                  </p>
+                  <div v-if="result.matched_queries.length" class="flex flex-wrap gap-2">
+                    <span
+                      v-for="query in result.matched_queries.slice(0, 3)"
+                      :key="query"
+                      class="rounded-full border border-[var(--line)] px-3 py-1 text-[11px] text-[var(--text)]"
+                    >
+                      {{ query }}
+                    </span>
+                  </div>
+                  <div
+                    v-if="editingId === result.id"
+                    class="max-w-lg space-y-2 rounded-xl border border-[var(--line)] bg-black/30 p-3"
+                  >
+                    <label class="space-y-1.5">
+                      <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{
+                        t('results.save.title_label')
+                      }}</span>
+                      <input
+                        v-model="editTitle"
+                        class="terminal-input"
+                        @keyup.enter="confirmSave(result)"
+                        @keyup.escape="cancelSave"
+                      />
+                    </label>
+                    <label class="space-y-1.5">
+                      <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{
+                        t('results.save.folder_label')
+                      }}</span>
+                      <select v-model="editFolderId" class="terminal-select">
+                        <option :value="null">{{ t('saved.folders.unfiled') }}</option>
+                        <option v-for="f in savedStore.folders" :key="f.id" :value="f.id">{{ f.name }}</option>
+                        <option :value="-1">{{ t('saved.folders.new_folder_option') }}</option>
+                      </select>
+                    </label>
                     <input
-                      v-model="editTitle"
+                      v-if="isNewFolder"
+                      v-model="editNewFolderName"
                       class="terminal-input"
-                      @keyup.enter="confirmSave(result)"
-                      @keyup.escape="cancelSave"
+                      :placeholder="t('saved.folders.new_folder_placeholder')"
                     />
-                  </label>
-                  <label class="space-y-1.5">
-                    <span class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('results.save.folder_label') }}</span>
-                    <select v-model="editFolderId" class="terminal-select">
-                      <option :value="null">{{ t('saved.folders.unfiled') }}</option>
-                      <option v-for="f in savedStore.folders" :key="f.id" :value="f.id">{{ f.name }}</option>
-                      <option :value="-1">{{ t('saved.folders.new_folder_option') }}</option>
-                    </select>
-                  </label>
-                  <input v-if="isNewFolder" v-model="editNewFolderName" class="terminal-input" :placeholder="t('saved.folders.new_folder_placeholder')" />
-                  <div class="flex gap-2">
-                    <button class="terminal-button terminal-button-primary" @click="confirmSave(result)">
-                      {{ t('results.save.confirm') }}
-                    </button>
-                    <button class="terminal-button terminal-button-secondary" @click="cancelSave">
-                      {{ t('dashboard.common.buttons.cancel') }}
-                    </button>
+                    <div class="flex gap-2">
+                      <button class="terminal-button terminal-button-primary" @click="confirmSave(result)">
+                        {{ t('results.save.confirm') }}
+                      </button>
+                      <button class="terminal-button terminal-button-secondary" @click="cancelSave">
+                        {{ t('dashboard.common.buttons.cancel') }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -232,22 +278,28 @@ const cancelSave = () => {
               </p>
             </td>
             <td class="w-24 text-right">
-              <button
-                v-if="!result.is_saved"
-                class="terminal-button terminal-button-secondary"
-                @click="openSaveForm(result)"
-              >
-                <UIcon name="i-heroicons-bookmark" class="size-3.5" />
-                {{ t('results.save.button') }}
-              </button>
-              <button
-                v-else
-                class="terminal-button terminal-button-secondary text-[var(--accent)]"
-                @click="emit('unsave', result.id)"
-              >
-                <UIcon name="i-heroicons-bookmark-solid" class="size-3.5" />
-                {{ t('results.save.unsave') }}
-              </button>
+              <div class="flex flex-col items-end gap-1.5">
+                <button
+                  v-if="!result.is_saved"
+                  class="terminal-button terminal-button-secondary"
+                  @click="openSaveForm(result)"
+                >
+                  <UIcon name="i-heroicons-bookmark" class="size-3.5" />
+                  {{ t('results.save.button') }}
+                </button>
+                <button
+                  v-else
+                  class="terminal-button terminal-button-secondary text-[var(--accent)]"
+                  @click="emit('unsave', result.id)"
+                >
+                  <UIcon name="i-heroicons-bookmark-solid" class="size-3.5" />
+                  {{ t('results.save.unsave') }}
+                </button>
+                <button class="terminal-button terminal-button-secondary" @click="emit('follow', result)">
+                  <UIcon name="i-heroicons-signal" class="size-3.5" />
+                  {{ t('results.follow.button') }}
+                </button>
+              </div>
             </td>
           </tr>
           <tr v-if="props.results.length === 0">

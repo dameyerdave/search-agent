@@ -24,6 +24,10 @@ class SearchTopic(TimestampedModel):
         DAYS = "days", "Days"
         WEEKS = "weeks", "Weeks"
 
+    class OriginKind(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        FOLLOWED = "followed", "Followed"
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -54,6 +58,20 @@ class SearchTopic(TimestampedModel):
         validators=[MinValueValidator(1), MaxValueValidator(20)],
     )
     notes = models.TextField(blank=True)
+    category_terms = models.JSONField(default=dict, blank=True)
+    include_in_press_review = models.BooleanField(default=True)
+    origin_kind = models.CharField(
+        max_length=16,
+        choices=OriginKind.choices,
+        default=OriginKind.MANUAL,
+    )
+    origin_result = models.ForeignKey(
+        "core.SearchResult",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="derived_topics",
+    )
     source_scopes = models.ManyToManyField(SourceScope, related_name="topics", blank=True)
     next_run_at = models.DateTimeField(null=True, blank=True)
     last_checked_at = models.DateTimeField(null=True, blank=True)

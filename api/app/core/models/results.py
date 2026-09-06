@@ -80,6 +80,9 @@ class SearchResult(TimestampedModel):
     )
     location_signature = models.CharField(max_length=40, blank=True)
     raw_result = models.JSONField(default=dict, blank=True)
+    ai_summary = models.TextField(blank=True)
+    summary_signature = models.CharField(max_length=40, blank=True)
+    image_url = models.URLField(max_length=1000, blank=True)
 
     class Meta:
         ordering = ["-is_new", "-published_at", "-first_seen_at"]

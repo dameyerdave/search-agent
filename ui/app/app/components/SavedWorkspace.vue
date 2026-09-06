@@ -5,6 +5,7 @@ const authStore = useAuthStore()
 const dashboardStore = useDashboardStore()
 const savedStore = useSavedWorkspaceStore()
 const { t } = useI18n()
+const { followResult } = useFollowResult()
 
 const confirmDeleteFolderId = ref<number | null>(null)
 const movingResultId = ref<number | null>(null)
@@ -16,6 +17,17 @@ const allSavedCount = computed(() => savedStore.folders.reduce((s, f) => s + f.r
 const selectFolder = (id: number | 'unfiled' | null) => {
   savedStore.loadFolderResults(id)
 }
+
+const openCreateFolder = () => {
+  savedStore.isCreatingFolder = true
+  savedStore.newFolderName = ''
+}
+
+useInfiniteScroll(window, () => savedStore.loadMoreFolderResults(), {
+  distance: 240,
+  canLoadMore: () =>
+    savedStore.canLoadMoreFolderResults && !savedStore.autoLoadCapReachedSaved && !savedStore.isLoadingMoreResults,
+})
 
 const submitCreateFolder = async () => {
   if (!savedStore.newFolderName.trim()) return
@@ -43,11 +55,7 @@ const startMove = (resultId: number) => {
 
 const submitMove = async () => {
   if (movingResultId.value === null) return
-  await savedStore.moveResult(
-    movingResultId.value,
-    moveTargetFolderId.value,
-    moveNewFolderName.value,
-  )
+  await savedStore.moveResult(movingResultId.value, moveTargetFolderId.value, moveNewFolderName.value)
   movingResultId.value = null
   if (savedStore.selectedFolderId !== null) {
     await savedStore.loadFolderResults(savedStore.selectedFolderId)
@@ -107,10 +115,7 @@ const submitMove = async () => {
             <!-- Folder list -->
             <div v-for="folder in savedStore.folders" :key="folder.id">
               <!-- Rename mode -->
-              <div
-                v-if="savedStore.editingFolderId === folder.id"
-                class="flex items-center gap-2 px-2 py-1"
-              >
+              <div v-if="savedStore.editingFolderId === folder.id" class="flex items-center gap-2 px-2 py-1">
                 <input
                   v-model="savedStore.editingFolderName"
                   class="terminal-input flex-1 text-sm"
@@ -120,7 +125,10 @@ const submitMove = async () => {
                 <button class="terminal-button terminal-button-primary text-xs" @click="submitRenameFolder(folder)">
                   {{ t('dashboard.common.buttons.save') }}
                 </button>
-                <button class="terminal-button terminal-button-secondary text-xs" @click="savedStore.cancelEditFolder()">
+                <button
+                  class="terminal-button terminal-button-secondary text-xs"
+                  @click="savedStore.cancelEditFolder()"
+                >
                   ✕
                 </button>
               </div>
@@ -130,24 +138,30 @@ const submitMove = async () => {
                 v-else-if="confirmDeleteFolderId === folder.id"
                 class="flex items-center gap-2 rounded-xl border border-[rgba(255,125,125,0.35)] bg-[rgba(64,7,7,0.4)] px-3 py-2"
               >
-                <span class="min-w-0 flex-1 text-xs text-[#ffd8d8]">{{ t('saved.folders.confirm_delete', { name: folder.name }) }}</span>
-                <button class="terminal-button terminal-button-danger text-xs" @click="confirmDelete(folder.id)">{{ t('dashboard.common.buttons.delete') }}</button>
-                <button class="terminal-button terminal-button-secondary text-xs" @click="confirmDeleteFolderId = null">✕</button>
+                <span class="min-w-0 flex-1 text-xs text-[#ffd8d8]">{{
+                  t('saved.folders.confirm_delete', { name: folder.name })
+                }}</span>
+                <button class="terminal-button terminal-button-danger text-xs" @click="confirmDelete(folder.id)">
+                  {{ t('dashboard.common.buttons.delete') }}
+                </button>
+                <button class="terminal-button terminal-button-secondary text-xs" @click="confirmDeleteFolderId = null">
+                  ✕
+                </button>
               </div>
 
               <!-- Normal row -->
               <div
                 v-else
                 class="group flex items-center gap-1 rounded-xl px-1 py-0.5 transition-colors"
-                :class="
-                  savedStore.selectedFolderId === folder.id
-                    ? 'bg-[var(--accent-soft)]'
-                    : 'hover:bg-black/30'
-                "
+                :class="savedStore.selectedFolderId === folder.id ? 'bg-[var(--accent-soft)]' : 'hover:bg-black/30'"
               >
                 <button
                   class="flex flex-1 items-center justify-between gap-2 px-2 py-1.5 text-left text-sm"
-                  :class="savedStore.selectedFolderId === folder.id ? 'text-[var(--accent)]' : 'text-[var(--muted)] hover:text-white'"
+                  :class="
+                    savedStore.selectedFolderId === folder.id
+                      ? 'text-[var(--accent)]'
+                      : 'text-[var(--muted)] hover:text-white'
+                  "
                   @click="selectFolder(folder.id)"
                 >
                   <span class="flex min-w-0 items-center gap-2">
@@ -156,16 +170,18 @@ const submitMove = async () => {
                   </span>
                   <span class="shrink-0 text-xs">{{ folder.result_count }}</span>
                 </button>
-                <div class="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <div
+                  class="flex shrink-0 gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                >
                   <button
-                    class="rounded-lg p-1 text-[var(--muted)] hover:text-white transition-colors"
+                    class="rounded-lg p-1 text-[var(--muted)] transition-colors hover:text-white"
                     :title="t('saved.folders.rename')"
                     @click="savedStore.startEditFolder(folder)"
                   >
                     <UIcon name="i-heroicons-pencil" class="size-3.5" />
                   </button>
                   <button
-                    class="rounded-lg p-1 text-[var(--muted)] hover:text-[var(--danger)] transition-colors"
+                    class="rounded-lg p-1 text-[var(--muted)] transition-colors hover:text-[var(--danger)]"
                     :title="t('saved.folders.delete')"
                     @click="confirmDeleteFolderId = folder.id"
                   >
@@ -189,11 +205,7 @@ const submitMove = async () => {
               {{ t('dashboard.common.buttons.save') }}
             </button>
           </div>
-          <button
-            v-else
-            class="terminal-button terminal-button-secondary w-full text-sm"
-            @click="savedStore.isCreatingFolder = true; savedStore.newFolderName = ''"
-          >
+          <button v-else class="terminal-button terminal-button-secondary w-full text-sm" @click="openCreateFolder">
             <UIcon name="i-heroicons-plus" class="size-3.5" />
             {{ t('saved.folders.new_folder') }}
           </button>
@@ -233,7 +245,13 @@ const submitMove = async () => {
               :key="result.id"
               class="rounded-xl border border-[var(--line)] bg-black/25 p-3"
             >
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <ResultThumbnail
+                  v-if="result.image_url"
+                  :src="result.image_url"
+                  :alt="result.title"
+                  class="w-20 shrink-0"
+                />
                 <div class="min-w-0 flex-1 space-y-1">
                   <p v-if="result.folder_name" class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                     {{ result.folder_name }}
@@ -242,29 +260,34 @@ const submitMove = async () => {
                     :href="result.url"
                     target="_blank"
                     rel="noreferrer"
-                    class="block break-words text-sm font-medium text-white hover:text-[var(--accent)]"
+                    class="block text-sm font-medium break-words text-white hover:text-[var(--accent)]"
                   >
                     {{ result.saved_title || result.title }}
                   </a>
                   <p class="text-xs text-[var(--muted)]">{{ result.domain }}</p>
+                  <p v-if="result.ai_summary" class="text-xs leading-5 text-[var(--muted)]">{{ result.ai_summary }}</p>
                 </div>
-                <div class="flex shrink-0 gap-1.5">
-                  <button
-                    class="terminal-button terminal-button-secondary text-xs"
-                    :title="t('saved.results.move')"
-                    @click="startMove(result.id)"
-                  >
-                    <UIcon name="i-heroicons-arrow-right-circle" class="size-3.5" />
-                    {{ t('saved.results.move') }}
-                  </button>
-                  <button
-                    class="terminal-button terminal-button-danger text-xs"
-                    :title="t('saved.results.remove')"
-                    @click="savedStore.unsaveResult(result.id)"
-                  >
-                    <UIcon name="i-heroicons-trash" class="size-3.5" />
-                  </button>
-                </div>
+              </div>
+              <div class="mt-2 flex flex-wrap justify-end gap-1.5">
+                <button
+                  class="terminal-button terminal-button-secondary text-xs"
+                  :title="t('saved.results.move')"
+                  @click="startMove(result.id)"
+                >
+                  <UIcon name="i-heroicons-arrow-right-circle" class="size-3.5" />
+                  {{ t('saved.results.move') }}
+                </button>
+                <button class="terminal-button terminal-button-secondary text-xs" @click="followResult(result)">
+                  <UIcon name="i-heroicons-signal" class="size-3.5" />
+                  {{ t('results.follow.button') }}
+                </button>
+                <button
+                  class="terminal-button terminal-button-danger text-xs"
+                  :title="t('saved.results.remove')"
+                  @click="savedStore.unsaveResult(result.id)"
+                >
+                  <UIcon name="i-heroicons-trash" class="size-3.5" />
+                </button>
               </div>
 
               <!-- Move form -->
@@ -304,6 +327,18 @@ const submitMove = async () => {
               })
             }}
           </p>
+
+          <div v-if="savedStore.isLoadingMoreResults" class="flex justify-center py-3">
+            <p class="text-sm text-[var(--muted)]">{{ t('saved.results.loading_more') }}</p>
+          </div>
+          <div
+            v-else-if="savedStore.canLoadMoreFolderResults && savedStore.autoLoadCapReachedSaved"
+            class="flex justify-center py-2"
+          >
+            <button class="terminal-button terminal-button-secondary" @click="savedStore.loadMoreFolderResults">
+              {{ t('dashboard.common.buttons.load_more') }}
+            </button>
+          </div>
         </div>
       </section>
     </div>

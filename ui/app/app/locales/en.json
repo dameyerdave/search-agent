@@ -38,12 +38,14 @@
         "ack_new": "Ack new",
         "select_all": "Select all",
         "clear": "Clear",
-        "clear_filters": "Clear filters"
+        "clear_filters": "Clear filters",
+        "load_more": "Load more"
       }
     },
     "nav": {
       "search": { "label": "Search" },
       "explore": { "label": "Explore" },
+      "press": { "label": "Press" },
       "saved": { "label": "Saved" },
       "configure": { "label": "Configure" },
       "runs": { "label": "Runs" }
@@ -172,6 +174,9 @@
       "save_dialog": {
         "title": "Save current search",
         "active_query": "Active query:",
+        "section_details": "Topic details",
+        "section_schedule": "Schedule",
+        "section_scope": "Dedicated scope",
         "topic_name": "Topic name",
         "description": "Description",
         "schedule_every": "Schedule every",
@@ -234,7 +239,8 @@
         "showing": "Showing {shown} of {total} results",
         "showing_for_topic": "for {name}",
         "prev": "Prev",
-        "next": "Next"
+        "next": "Next",
+        "loading_more": "Loading more results..."
       }
     },
     "configure": {
@@ -280,10 +286,30 @@
         "max_results_label": "Max results / query",
         "notes_label": "Notes",
         "enabled_label": "Enabled",
+        "press_review_label": "Press Review",
+        "press_review_include": "Include in Press Review",
+        "press_review_exclude": "Exclude from Press Review",
         "attach_sources": "Attach source scopes",
         "save_button": "Create topic",
         "update_button": "Update topic",
-        "saving": "Saving topic..."
+        "saving": "Saving topic...",
+        "section_basics": "Basics",
+        "section_query_rules": "Query rules",
+        "section_categories": "Focus areas",
+        "section_categories_hint": "Optionally refine the topic by adding specific keywords, people, companies, locations, regions, or events. These narrow the search alongside your queries above.",
+        "suggest_with_ai": "Suggest with AI",
+        "suggesting": "Suggesting...",
+        "suggest_needs_input": "Add a description or at least one query first.",
+        "suggest_success": "Suggestions added - review before saving.",
+        "suggest_failed": "Failed to generate suggestions.",
+        "category_keywords": "Keywords",
+        "category_people": "People",
+        "category_companies": "Companies",
+        "category_locations": "Locations",
+        "category_regions": "Regions",
+        "category_events": "Events",
+        "section_schedule_limits": "Schedule & limits",
+        "followed_from": "Followed from"
       },
       "source_editor": {
         "title_create": "Create source scope",
@@ -302,7 +328,11 @@
         "save_button": "Create source",
         "update_button": "Update source",
         "saving": "Saving source...",
-        "current_scopes_title": "Current source scopes"
+        "current_scopes_title": "Current source scopes",
+        "section_basics": "Basics",
+        "section_search_behavior": "Search behavior",
+        "section_coverage": "Category & engine coverage",
+        "section_languages_domains": "Languages & domains"
       }
     },
     "runs": {
@@ -327,7 +357,8 @@
         "pages_crawled": "Pages crawled",
         "started": "Started {date}",
         "completed": "Completed {date}",
-        "empty": "No runs captured yet. Trigger a topic or wait for its scheduled cadence to fire."
+        "empty": "No runs captured yet. Trigger a topic or wait for its scheduled cadence to fire.",
+        "loading_more": "Loading more runs..."
       },
       "topic_pulse": {
         "title": "Topic pulse",
@@ -408,7 +439,12 @@
     "unsave_error": "Failed to remove saved result",
     "not_available": "n/a",
     "no_preview": "No preview available.",
-    "empty": "No results match the current filter set."
+    "empty": "No results match the current filter set.",
+    "follow": {
+      "button": "Follow this",
+      "success": "New topic created from this result - it will start tracking related coverage.",
+      "error": "Failed to create a followed topic from this result."
+    }
   },
   "push": {
     "enable": "Enable notifications",
@@ -437,7 +473,8 @@
       "remove": "Remove",
       "move_to": "Move to folder",
       "confirm_move": "Move result",
-      "showing": "Showing {shown} of {total} saved results"
+      "showing": "Showing {shown} of {total} saved results",
+      "loading_more": "Loading more saved results..."
     },
     "errors": {
       "load_folders_failed": "Failed to load folders.",
@@ -509,6 +546,18 @@
     },
     "errors": {
       "generate_failed": "Failed to generate the timeline."
+    }
+  },
+  "press_review": {
+    "title": "Press Review",
+    "subtitle": "What happened across your topics, refreshed automatically through the day.",
+    "new_count": "{count} new",
+    "acknowledge_all": "Mark all as seen",
+    "empty": "Nothing in the Press Review yet - it fills in as your topics find coverage.",
+    "loading_more": "Loading more coverage...",
+    "errors": {
+      "load_failed": "Failed to load the Press Review.",
+      "acknowledge_failed": "Failed to mark the Press Review as seen."
     }
   }
 }

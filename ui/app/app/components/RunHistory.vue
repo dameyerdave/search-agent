@@ -14,6 +14,11 @@ const runStatusLabel = (status: SearchRun['status']) => {
 }
 
 const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboard.common.never')
+
+useInfiniteScroll(window, () => runsStore.loadMoreRuns(), {
+  distance: 240,
+  canLoadMore: () => runsStore.canLoadMoreRuns && !runsStore.autoLoadCapReachedRuns && !runsStore.isLoadingMoreRuns,
+})
 </script>
 
 <template>
@@ -30,7 +35,7 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
         </div>
       </div>
 
-      <div class="grid gap-2 md:grid-cols-2 sm:gap-3">
+      <div class="grid gap-2 sm:gap-3 md:grid-cols-2">
         <label class="space-y-2">
           <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
             {{ t('dashboard.explore.results_terminal.topic_filter') }}
@@ -84,7 +89,7 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
             <span class="pill" :class="statusClass(run.status)">{{ runStatusLabel(run.status) }}</span>
           </div>
 
-          <div class="mt-2.5 grid gap-2 grid-cols-3">
+          <div class="mt-2.5 grid grid-cols-3 gap-2">
             <div>
               <p class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
                 {{ t('dashboard.runs.run_history.requests') }}
@@ -118,6 +123,15 @@ const formatRunDate = (value: string | null) => formatDate(value) ?? t('dashboar
         >
           {{ t('dashboard.runs.run_history.empty') }}
         </article>
+      </div>
+
+      <div v-if="runsStore.isLoadingMoreRuns" class="flex justify-center py-3">
+        <p class="text-sm text-[var(--muted)]">{{ t('dashboard.runs.run_history.loading_more') }}</p>
+      </div>
+      <div v-else-if="runsStore.canLoadMoreRuns && runsStore.autoLoadCapReachedRuns" class="flex justify-center py-2">
+        <button class="terminal-button terminal-button-secondary" @click="runsStore.loadMoreRuns">
+          {{ t('dashboard.common.buttons.load_more') }}
+        </button>
       </div>
     </div>
   </section>

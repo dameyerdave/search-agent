@@ -1,6 +1,8 @@
 import { getErrorMessage } from 'errors'
 import type { PaginatedResponse, SearchResult } from 'types/search-agent'
 
+const MAX_AUTO_LOAD_RESULTS = 200
+
 export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () => {
   const api = useSearchAgentApi()
   const { t } = useI18n()
@@ -8,6 +10,8 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
   const dashboardStore = useDashboardStore()
 
   const resultsPage = ref<PaginatedResponse<SearchResult> | null>(null)
+  const accumulatedResults = ref<SearchResult[]>([])
+  const isLoadingMore = ref(false)
 
   const resultFilters = reactive({
     q: '',
@@ -17,14 +21,17 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
     page: 1,
   })
 
-  const results = computed(() => resultsPage.value?.results ?? [])
+  const results = computed(() => accumulatedResults.value)
+  const canLoadMore = computed(() => Boolean(resultsPage.value?.next))
+  const autoLoadCapReached = computed(() => accumulatedResults.value.length >= MAX_AUTO_LOAD_RESULTS)
 
   const selectedTopic = computed(
     () => dashboardStore.topics.find((topic) => topic.slug === resultFilters.topic) ?? null,
   )
 
-  const loadResults = async (page = 1) => {
+  const loadResults = async (page = 1, options: { append?: boolean } = {}) => {
     resultFilters.page = page
+    if (options.append) isLoadingMore.value = true
 
     const query: Record<string, string | number | boolean | undefined> = {
       page,
@@ -34,7 +41,26 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
       is_new: resultFilters.isNewOnly ? true : undefined,
     }
 
-    resultsPage.value = await api.get<PaginatedResponse<SearchResult>>('/api/v1/results/', query)
+    try {
+      const response = await api.get<PaginatedResponse<SearchResult>>('/api/v1/results/', query)
+      resultsPage.value = response
+      if (options.append) {
+        const existingIds = new Set(accumulatedResults.value.map((r) => r.id))
+        accumulatedResults.value = [
+          ...accumulatedResults.value,
+          ...response.results.filter((r) => !existingIds.has(r.id)),
+        ]
+      } else {
+        accumulatedResults.value = response.results
+      }
+    } finally {
+      isLoadingMore.value = false
+    }
+  }
+
+  const loadMoreResults = async () => {
+    if (!canLoadMore.value || isLoadingMore.value) return
+    await loadResults(resultFilters.page + 1, { append: true })
   }
 
   const clearResultFilters = async () => {
@@ -62,21 +88,14 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
     await dashboardStore.refreshAll()
   }
 
-  const saveResult = async (
-    id: number,
-    title: string,
-    folderId: number | null = null,
-    newFolderName: string = '',
-  ) => {
+  const saveResult = async (id: number, title: string, folderId: number | null = null, newFolderName: string = '') => {
     try {
       const body: Record<string, unknown> = { title }
       if (newFolderName) body.folder_name = newFolderName
       else if (folderId) body.folder_id = folderId
       const updated = await api.post<SearchResult>(`/api/v1/results/${id}/save/`, body)
-      if (resultsPage.value) {
-        const idx = resultsPage.value.results.findIndex((r) => r.id === id)
-        if (idx !== -1) resultsPage.value.results[idx] = updated
-      }
+      const idx = accumulatedResults.value.findIndex((r) => r.id === id)
+      if (idx !== -1) accumulatedResults.value[idx] = updated
       await useSavedWorkspaceStore().loadFolders()
       toast.add({ title: t('results.save_success'), color: 'success' })
     } catch (error: unknown) {
@@ -87,10 +106,8 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
   const unsaveResult = async (id: number) => {
     try {
       const updated = await api.post<SearchResult>(`/api/v1/results/${id}/unsave/`, {})
-      if (resultsPage.value) {
-        const idx = resultsPage.value.results.findIndex((r) => r.id === id)
-        if (idx !== -1) resultsPage.value.results[idx] = updated
-      }
+      const idx = accumulatedResults.value.findIndex((r) => r.id === id)
+      if (idx !== -1) accumulatedResults.value[idx] = updated
     } catch (error: unknown) {
       toast.add({ title: getErrorMessage(error) || t('results.unsave_error'), color: 'error' })
     }
@@ -98,6 +115,7 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
 
   const resetResultsState = () => {
     resultsPage.value = null
+    accumulatedResults.value = []
   }
 
   const debouncedResultsReload = useDebounceFn(async () => {
@@ -115,8 +133,12 @@ export const useExploreWorkspaceStore = defineStore('exploreWorkspaceStore', () 
     resultFilters,
     resultsPage,
     results,
+    canLoadMore,
+    autoLoadCapReached,
+    isLoadingMore,
     selectedTopic,
     loadResults,
+    loadMoreResults,
     clearResultFilters,
     acknowledgeVisibleResults,
     saveResult,

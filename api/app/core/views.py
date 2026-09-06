@@ -11,10 +11,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .auth_serializers import AuthenticatedUserSerializer
+from .live_search_serializers import SearxNGSearchRequestSerializer
 from .models import SearchProviderConfig, SearchRun
 from .querysets import owned_results, owned_runs, owned_source_scopes, owned_topics
 from .serializers import (
-    SearxNGSearchRequestSerializer,
     SearchProviderConfigSerializer,
     SearchResultSerializer,
     SearchRunSerializer,

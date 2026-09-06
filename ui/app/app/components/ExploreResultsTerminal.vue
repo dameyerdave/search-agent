@@ -4,8 +4,14 @@ import { formatDate } from 'utils/dashboard'
 const dashboardStore = useDashboardStore()
 const exploreStore = useExploreWorkspaceStore()
 const { t } = useI18n()
+const { followResult } = useFollowResult()
 
 const formatResultDate = (value: string | null) => formatDate(value) ?? t('dashboard.common.never')
+
+useInfiniteScroll(window, () => exploreStore.loadMoreResults(), {
+  distance: 240,
+  canLoadMore: () => exploreStore.canLoadMore && !exploreStore.autoLoadCapReached && !exploreStore.isLoadingMore,
+})
 </script>
 
 <template>
@@ -70,6 +76,7 @@ const formatResultDate = (value: string | null) => formatDate(value) ?? t('dashb
         :format-date="formatResultDate"
         @save="exploreStore.saveResult"
         @unsave="exploreStore.unsaveResult"
+        @follow="followResult"
       />
 
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -84,22 +91,19 @@ const formatResultDate = (value: string | null) => formatDate(value) ?? t('dashb
             {{ t('dashboard.explore.results_terminal.showing_for_topic', { name: exploreStore.selectedTopic.name }) }}
           </span>
         </p>
-        <div class="flex gap-2">
-          <button
-            class="terminal-button terminal-button-secondary flex-1 sm:flex-initial"
-            :disabled="!exploreStore.resultsPage?.previous"
-            @click="exploreStore.loadResults(exploreStore.resultFilters.page - 1)"
-          >
-            {{ t('dashboard.explore.results_terminal.prev') }}
-          </button>
-          <button
-            class="terminal-button terminal-button-secondary flex-1 sm:flex-initial"
-            :disabled="!exploreStore.resultsPage?.next"
-            @click="exploreStore.loadResults(exploreStore.resultFilters.page + 1)"
-          >
-            {{ t('dashboard.explore.results_terminal.next') }}
-          </button>
-        </div>
+      </div>
+
+      <div class="flex justify-center pt-2">
+        <p v-if="exploreStore.isLoadingMore" class="text-sm text-[var(--muted)]">
+          {{ t('dashboard.explore.results_terminal.loading_more') }}
+        </p>
+        <button
+          v-else-if="exploreStore.canLoadMore && exploreStore.autoLoadCapReached"
+          class="terminal-button terminal-button-secondary"
+          @click="exploreStore.loadMoreResults"
+        >
+          {{ t('dashboard.common.buttons.load_more') }}
+        </button>
       </div>
     </div>
   </section>

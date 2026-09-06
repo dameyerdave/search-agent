@@ -25,6 +25,21 @@ export interface SourceScope {
   updated_at: string
 }
 
+export interface TopicCategoryTerms {
+  keywords: string[]
+  people: string[]
+  companies: string[]
+  locations: string[]
+  regions: string[]
+  events: string[]
+}
+
+export interface TopicOriginResult {
+  id: number
+  title: string
+  url: string
+}
+
 export interface SearchTopic {
   id: number
   name: string
@@ -34,11 +49,15 @@ export interface SearchTopic {
   queries: string[]
   required_terms: string[]
   excluded_terms: string[]
+  category_terms: TopicCategoryTerms
   lookback_days: number
   schedule_every: number
   schedule_unit: 'minutes' | 'hours' | 'days' | 'weeks'
   max_results_per_query: number
   notes: string
+  include_in_press_review: boolean
+  origin_kind: 'manual' | 'followed'
+  origin_result: TopicOriginResult | null
   source_scopes: SourceScope[]
   result_count: number
   new_results_count: number
@@ -51,6 +70,13 @@ export interface SearchTopic {
   schedule_description: string
   created_at: string
   updated_at: string
+}
+
+export interface TopicCategorySuggestion {
+  name: string
+  description: string
+  queries: string[]
+  category_terms: TopicCategoryTerms
 }
 
 export interface ProviderConfig {
@@ -125,6 +151,8 @@ export interface SearchResult {
   snippet: string
   content: string
   favicon_url: string
+  image_url: string
+  ai_summary: string
   score: number | null
   published_at: string | null
   matched_queries: string[]

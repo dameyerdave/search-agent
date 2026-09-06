@@ -36,129 +36,214 @@ const categoryLabel = (source: SourceScope) => {
         </button>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2">
-        <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.configure.topic_editor.name_label') }}
-          </span>
-          <input
-            v-model="configureStore.topicForm.name"
-            class="terminal-input"
-            :placeholder="t('dashboard.configure.topic_editor.name_placeholder')"
-          />
-        </label>
-        <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.configure.topic_editor.description_label') }}
-          </span>
-          <textarea v-model="configureStore.topicForm.description" class="terminal-textarea min-h-[90px]" />
-        </label>
-        <label class="space-y-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.configure.topic_editor.queries_label') }}
-          </span>
-          <textarea v-model="configureStore.topicForm.queries" class="terminal-textarea min-h-[155px]" />
-        </label>
-        <div class="grid gap-3">
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.configure.topic_editor.required_terms_label') }}
-            </span>
-            <textarea
-              v-model="configureStore.topicForm.requiredTerms"
-              class="terminal-textarea min-h-[70px]"
-              :placeholder="t('dashboard.configure.topic_editor.required_terms_placeholder')"
-            />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.configure.topic_editor.excluded_terms_label') }}
-            </span>
-            <textarea
-              v-model="configureStore.topicForm.excludedTerms"
-              class="terminal-textarea min-h-[70px]"
-              :placeholder="t('dashboard.configure.topic_editor.excluded_terms_placeholder')"
-            />
-          </label>
-        </div>
-        <label class="space-y-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.configure.topic_editor.lookback_days_label') }}
-          </span>
-          <input v-model="configureStore.topicForm.lookbackDays" class="terminal-input" type="number" min="1" />
-        </label>
-        <div class="grid gap-3">
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.configure.topic_editor.schedule_every_label') }}
-            </span>
-            <input v-model="configureStore.topicForm.scheduleEvery" class="terminal-input" type="number" min="1" />
-          </label>
-          <label class="space-y-2">
-            <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-              {{ t('dashboard.configure.topic_editor.schedule_unit_label') }}
-            </span>
-            <select v-model="configureStore.topicForm.scheduleUnit" class="terminal-select">
-              <option value="minutes">{{ t('dashboard.search.save_dialog.unit_minutes') }}</option>
-              <option value="hours">{{ t('dashboard.search.save_dialog.unit_hours') }}</option>
-              <option value="days">{{ t('dashboard.search.save_dialog.unit_days') }}</option>
-              <option value="weeks">{{ t('dashboard.search.save_dialog.unit_weeks') }}</option>
-            </select>
-          </label>
-        </div>
-        <label class="space-y-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.configure.topic_editor.max_results_label') }}
-          </span>
-          <input
-            v-model="configureStore.topicForm.maxResultsPerQuery"
-            class="terminal-input"
-            type="number"
-            min="1"
-            max="20"
-          />
-        </label>
-        <label class="space-y-2 sm:col-span-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.configure.topic_editor.notes_label') }}
-          </span>
-          <textarea v-model="configureStore.topicForm.notes" class="terminal-textarea min-h-[90px]" />
-        </label>
-        <label class="space-y-2">
-          <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-            {{ t('dashboard.configure.topic_editor.enabled_label') }}
-          </span>
-          <select v-model="configureStore.topicForm.enabled" class="terminal-select">
-            <option :value="true">{{ t('dashboard.common.enabled') }}</option>
-            <option :value="false">{{ t('dashboard.common.disabled') }}</option>
-          </select>
-        </label>
-      </div>
+      <div class="space-y-3">
+        <details class="terminal-disclosure" open>
+          <summary>{{ t('dashboard.configure.topic_editor.section_basics') }}</summary>
+          <div class="terminal-disclosure__body grid gap-3 sm:grid-cols-2">
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.name_label') }}
+              </span>
+              <input
+                v-model="configureStore.topicForm.name"
+                class="terminal-input"
+                :placeholder="t('dashboard.configure.topic_editor.name_placeholder')"
+              />
+            </label>
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.description_label') }}
+              </span>
+              <textarea v-model="configureStore.topicForm.description" class="terminal-textarea min-h-[90px]" />
+            </label>
+          </div>
+        </details>
 
-      <div class="space-y-3 rounded-2xl border border-[var(--line)] bg-black/20 p-4">
-        <p class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
-          {{ t('dashboard.configure.topic_editor.attach_sources') }}
-        </p>
-        <div class="grid gap-2 sm:grid-cols-2">
-          <label
-            v-for="source in dashboardStore.sources"
-            :key="source.id"
-            class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--line)] p-3 text-sm text-[var(--text)]"
-          >
-            <input
-              :checked="configureStore.topicForm.sourceScopeIds.includes(source.id)"
-              type="checkbox"
-              class="mt-1 accent-[var(--accent)]"
-              @change="configureStore.toggleTopicSource(source.id)"
-            />
-            <span>
-              <span class="block">{{ source.name }}</span>
-              <span class="mt-1 block text-xs text-[var(--muted)]"
-                >{{ kindLabel(source.kind) }} / {{ categoryLabel(source) }}</span
+        <details class="terminal-disclosure">
+          <summary>{{ t('dashboard.configure.topic_editor.section_query_rules') }}</summary>
+          <div class="terminal-disclosure__body grid gap-3 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.queries_label') }}
+              </span>
+              <textarea v-model="configureStore.topicForm.queries" class="terminal-textarea min-h-[155px]" />
+            </label>
+            <div class="grid gap-3">
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.required_terms_label') }}
+                </span>
+                <textarea
+                  v-model="configureStore.topicForm.requiredTerms"
+                  class="terminal-textarea min-h-[70px]"
+                  :placeholder="t('dashboard.configure.topic_editor.required_terms_placeholder')"
+                />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.excluded_terms_label') }}
+                </span>
+                <textarea
+                  v-model="configureStore.topicForm.excludedTerms"
+                  class="terminal-textarea min-h-[70px]"
+                  :placeholder="t('dashboard.configure.topic_editor.excluded_terms_placeholder')"
+                />
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <details class="terminal-disclosure">
+          <summary>{{ t('dashboard.configure.topic_editor.section_categories') }}</summary>
+          <div class="terminal-disclosure__body space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-xs leading-5 text-[var(--muted)]">
+                {{ t('dashboard.configure.topic_editor.section_categories_hint') }}
+              </p>
+              <button
+                type="button"
+                class="terminal-button terminal-button-secondary shrink-0"
+                :disabled="configureStore.isSuggestingCategories"
+                @click="configureStore.suggestCategories"
               >
-            </span>
-          </label>
-        </div>
+                {{
+                  configureStore.isSuggestingCategories
+                    ? t('dashboard.configure.topic_editor.suggesting')
+                    : t('dashboard.configure.topic_editor.suggest_with_ai')
+                }}
+              </button>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.category_keywords') }}
+                </span>
+                <textarea v-model="configureStore.topicForm.keywords" class="terminal-textarea min-h-[70px]" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.category_people') }}
+                </span>
+                <textarea v-model="configureStore.topicForm.people" class="terminal-textarea min-h-[70px]" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.category_companies') }}
+                </span>
+                <textarea v-model="configureStore.topicForm.companies" class="terminal-textarea min-h-[70px]" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.category_locations') }}
+                </span>
+                <textarea v-model="configureStore.topicForm.locations" class="terminal-textarea min-h-[70px]" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.category_regions') }}
+                </span>
+                <textarea v-model="configureStore.topicForm.regions" class="terminal-textarea min-h-[70px]" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.category_events') }}
+                </span>
+                <textarea v-model="configureStore.topicForm.events" class="terminal-textarea min-h-[70px]" />
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <details class="terminal-disclosure">
+          <summary>{{ t('dashboard.configure.topic_editor.section_schedule_limits') }}</summary>
+          <div class="terminal-disclosure__body grid gap-3 sm:grid-cols-2">
+            <label class="space-y-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.lookback_days_label') }}
+              </span>
+              <input v-model="configureStore.topicForm.lookbackDays" class="terminal-input" type="number" min="1" />
+            </label>
+            <div class="grid gap-3">
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.schedule_every_label') }}
+                </span>
+                <input v-model="configureStore.topicForm.scheduleEvery" class="terminal-input" type="number" min="1" />
+              </label>
+              <label class="space-y-2">
+                <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                  {{ t('dashboard.configure.topic_editor.schedule_unit_label') }}
+                </span>
+                <select v-model="configureStore.topicForm.scheduleUnit" class="terminal-select">
+                  <option value="minutes">{{ t('dashboard.search.save_dialog.unit_minutes') }}</option>
+                  <option value="hours">{{ t('dashboard.search.save_dialog.unit_hours') }}</option>
+                  <option value="days">{{ t('dashboard.search.save_dialog.unit_days') }}</option>
+                  <option value="weeks">{{ t('dashboard.search.save_dialog.unit_weeks') }}</option>
+                </select>
+              </label>
+            </div>
+            <label class="space-y-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.max_results_label') }}
+              </span>
+              <input
+                v-model="configureStore.topicForm.maxResultsPerQuery"
+                class="terminal-input"
+                type="number"
+                min="1"
+                max="20"
+              />
+            </label>
+            <label class="space-y-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.enabled_label') }}
+              </span>
+              <select v-model="configureStore.topicForm.enabled" class="terminal-select">
+                <option :value="true">{{ t('dashboard.common.enabled') }}</option>
+                <option :value="false">{{ t('dashboard.common.disabled') }}</option>
+              </select>
+            </label>
+            <label class="space-y-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.press_review_label') }}
+              </span>
+              <select v-model="configureStore.topicForm.includeInPressReview" class="terminal-select">
+                <option :value="true">{{ t('dashboard.configure.topic_editor.press_review_include') }}</option>
+                <option :value="false">{{ t('dashboard.configure.topic_editor.press_review_exclude') }}</option>
+              </select>
+            </label>
+            <label class="space-y-2 sm:col-span-2">
+              <span class="text-xs tracking-[0.22em] text-[var(--muted)] uppercase">
+                {{ t('dashboard.configure.topic_editor.notes_label') }}
+              </span>
+              <textarea v-model="configureStore.topicForm.notes" class="terminal-textarea min-h-[90px]" />
+            </label>
+          </div>
+        </details>
+
+        <details class="terminal-disclosure" open>
+          <summary>{{ t('dashboard.configure.topic_editor.attach_sources') }}</summary>
+          <div class="terminal-disclosure__body grid gap-2 sm:grid-cols-2">
+            <label
+              v-for="source in dashboardStore.sources"
+              :key="source.id"
+              class="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--line)] p-3 text-sm text-[var(--text)]"
+            >
+              <input
+                :checked="configureStore.topicForm.sourceScopeIds.includes(source.id)"
+                type="checkbox"
+                class="mt-1 accent-[var(--accent)]"
+                @change="configureStore.toggleTopicSource(source.id)"
+              />
+              <span>
+                <span class="block">{{ source.name }}</span>
+                <span class="mt-1 block text-xs text-[var(--muted)]"
+                  >{{ kindLabel(source.kind) }} / {{ categoryLabel(source) }}</span
+                >
+              </span>
+            </label>
+          </div>
+        </details>
       </div>
 
       <button

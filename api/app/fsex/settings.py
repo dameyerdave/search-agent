@@ -1,6 +1,8 @@
 from datetime import timedelta
 from pathlib import Path
 
+from celery.schedules import crontab
+
 import environ
 import sqlparse
 import structlog
@@ -158,7 +160,23 @@ CELERY_BEAT_SCHEDULE = {
     "dispatch-due-topic-searches": {
         "task": "core.tasks.dispatch_due_topic_searches",
         "schedule": timedelta(minutes=1),
-    }
+    },
+    "press-review-refresh-0500": {
+        "task": "core.tasks.dispatch_press_review_refresh",
+        "schedule": crontab(hour=5, minute=0),
+    },
+    "press-review-refresh-1100": {
+        "task": "core.tasks.dispatch_press_review_refresh",
+        "schedule": crontab(hour=11, minute=0),
+    },
+    "press-review-refresh-1700": {
+        "task": "core.tasks.dispatch_press_review_refresh",
+        "schedule": crontab(hour=17, minute=0),
+    },
+    "press-review-refresh-2000": {
+        "task": "core.tasks.dispatch_press_review_refresh",
+        "schedule": crontab(hour=20, minute=0),
+    },
 }
 
 AUTH_PASSWORD_VALIDATORS = [

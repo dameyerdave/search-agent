@@ -48,6 +48,10 @@ const sourceNames = (topic: SearchTopic) =>
                 <span class="pill" :class="statusClass(topic.last_run_status)">
                   {{ t(`dashboard.common.status.${summarizeStatus(topic.last_run_status)}`) }}
                 </span>
+                <span v-if="topic.origin_kind === 'followed'" class="pill text-[var(--accent)]">
+                  <UIcon name="i-heroicons-signal" class="size-3" />
+                  {{ t('dashboard.configure.topic_editor.followed_from') }}
+                </span>
               </div>
               <p class="mt-2 text-base break-words text-white">{{ topic.name }}</p>
             </div>
