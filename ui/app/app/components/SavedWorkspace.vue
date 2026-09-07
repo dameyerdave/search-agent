@@ -265,66 +265,20 @@ const submitMove = async () => {
             {{ t('saved.results.empty') }}
           </div>
 
-          <div v-else class="space-y-2">
-            <article
-              v-for="result in savedStore.folderResults"
-              :key="result.id"
-              class="rounded-xl border border-[var(--line)] bg-black/25 p-3"
-            >
-              <div class="flex items-start gap-3">
-                <ResultThumbnail
-                  v-if="result.image_url"
-                  :src="result.image_url"
-                  :alt="result.title"
-                  class="w-20 shrink-0"
-                />
-                <div class="min-w-0 flex-1 space-y-1">
-                  <p v-if="result.folder_name" class="text-[10px] tracking-[0.18em] text-[var(--muted)] uppercase">
-                    {{ result.folder_name }}
-                  </p>
-                  <a
-                    :href="result.url"
-                    target="_blank"
-                    rel="noreferrer"
-                    class="block text-sm font-medium break-words text-white hover:text-[var(--accent)]"
-                  >
-                    {{ result.saved_title || result.title }}
-                  </a>
-                  <p class="text-xs text-[var(--muted)]">{{ result.domain }}</p>
-                  <p v-if="result.ai_summary" class="text-xs leading-5 text-[var(--muted)]">{{ result.ai_summary }}</p>
-                </div>
-              </div>
-              <div class="mt-2 flex flex-wrap justify-end gap-1.5">
-                <button
-                  class="terminal-button terminal-button-secondary p-2"
-                  :title="t('saved.results.move')"
-                  :aria-label="t('saved.results.move')"
-                  @click="startMove(result.id)"
-                >
-                  <UIcon name="i-heroicons-arrow-right-circle" class="size-4" />
-                </button>
-                <button
-                  class="terminal-button terminal-button-secondary p-2"
-                  :title="t('results.follow.button')"
-                  :aria-label="t('results.follow.button')"
-                  @click="followResult(result)"
-                >
-                  <UIcon name="i-heroicons-signal" class="size-4" />
-                </button>
-                <button
-                  class="terminal-button terminal-button-danger p-2"
-                  :title="t('saved.results.remove')"
-                  :aria-label="t('saved.results.remove')"
-                  @click="savedStore.unsaveResult(result.id)"
-                >
-                  <UIcon name="i-heroicons-trash" class="size-4" />
-                </button>
-              </div>
+          <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div v-for="result in savedStore.folderResults" :key="result.id" class="space-y-2">
+              <ResultCard
+                :result="result"
+                show-move
+                @move="startMove(result.id)"
+                @unsave="savedStore.unsaveResult(result.id)"
+                @follow="followResult(result)"
+              />
 
               <!-- Move form -->
               <div
                 v-if="movingResultId === result.id"
-                class="mt-2 space-y-2 rounded-xl border border-[var(--line)] bg-black/30 p-3"
+                class="space-y-2 rounded-xl border border-[var(--line)] bg-black/30 p-3"
               >
                 <p class="text-xs tracking-[0.18em] text-[var(--muted)] uppercase">{{ t('saved.results.move_to') }}</p>
                 <select v-model="moveTargetFolderId" class="terminal-select text-sm">
@@ -355,7 +309,7 @@ const submitMove = async () => {
                   </button>
                 </div>
               </div>
-            </article>
+            </div>
           </div>
 
           <p v-if="savedStore.folderResultsPage" class="text-xs text-[var(--muted)]">

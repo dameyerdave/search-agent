@@ -415,24 +415,15 @@
     }
   },
   "results": {
-    "headers": {
-      "result": "Result",
-      "when": "When"
-    },
     "badges": {
-      "new": "new",
-      "saved": "saved"
+      "new": "new"
     },
     "meta": {
-      "seen": "Seen {date}",
       "published": "Published {date}"
     },
     "save": {
       "button": "Save",
-      "unsave": "Remove",
-      "title_label": "Title",
-      "folder_label": "Folder",
-      "confirm": "Save result"
+      "unsave": "Remove"
     },
     "save_success": "Result saved",
     "save_error": "Failed to save result",
@@ -470,7 +461,6 @@
       "select_folder_prompt": "Select a folder to view its saved results.",
       "empty": "No saved results in this folder yet.",
       "move": "Move",
-      "remove": "Remove",
       "move_to": "Move to folder",
       "confirm_move": "Move result",
       "showing": "Showing {shown} of {total} saved results",

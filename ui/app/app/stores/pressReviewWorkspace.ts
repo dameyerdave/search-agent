@@ -49,6 +49,27 @@ export const usePressReviewWorkspaceStore = defineStore('pressReviewWorkspaceSto
     await loadResults(currentPage.value + 1, { append: true })
   }
 
+  const saveResult = async (result: SearchResult) => {
+    try {
+      const updated = await api.post<SearchResult>(`/api/v1/results/${result.id}/save/`, { title: result.title })
+      const idx = accumulatedResults.value.findIndex((r) => r.id === result.id)
+      if (idx !== -1) accumulatedResults.value[idx] = updated
+      toast.add({ title: t('results.save_success'), color: 'success' })
+    } catch (error: unknown) {
+      toast.add({ title: getErrorMessage(error) || t('results.save_error'), color: 'error' })
+    }
+  }
+
+  const unsaveResult = async (result: SearchResult) => {
+    try {
+      const updated = await api.post<SearchResult>(`/api/v1/results/${result.id}/unsave/`, {})
+      const idx = accumulatedResults.value.findIndex((r) => r.id === result.id)
+      if (idx !== -1) accumulatedResults.value[idx] = updated
+    } catch (error: unknown) {
+      toast.add({ title: getErrorMessage(error) || t('results.unsave_error'), color: 'error' })
+    }
+  }
+
   const acknowledgeAll = async () => {
     try {
       await api.post('/api/v1/results/acknowledge/', { press_review: true })
@@ -74,6 +95,8 @@ export const usePressReviewWorkspaceStore = defineStore('pressReviewWorkspaceSto
     isLoadingMore,
     loadResults,
     loadMoreResults,
+    saveResult,
+    unsaveResult,
     acknowledgeAll,
     resetState,
   }

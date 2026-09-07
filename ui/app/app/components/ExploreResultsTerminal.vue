@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { formatDate } from 'utils/dashboard'
+import type { SearchResult } from 'types/search-agent'
 
 const dashboardStore = useDashboardStore()
 const exploreStore = useExploreWorkspaceStore()
 const { t } = useI18n()
 const { followResult } = useFollowResult()
 
-const formatResultDate = (value: string | null) => formatDate(value) ?? t('dashboard.common.never')
+const saveResult = (result: SearchResult) => exploreStore.saveResult(result.id, result.title)
+const unsaveResult = (result: SearchResult) => exploreStore.unsaveResult(result.id)
 
 useInfiniteScroll(window, () => exploreStore.loadMoreResults(), {
   distance: 240,
@@ -83,9 +84,8 @@ useInfiniteScroll(window, () => exploreStore.loadMoreResults(), {
 
       <ResponsiveResultsList
         :results="exploreStore.results"
-        :format-date="formatResultDate"
-        @save="exploreStore.saveResult"
-        @unsave="exploreStore.unsaveResult"
+        @save="saveResult"
+        @unsave="unsaveResult"
         @follow="followResult"
       />
 
